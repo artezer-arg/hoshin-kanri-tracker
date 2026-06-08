@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DX Plan</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Lucide Icons via CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- ExcelJS for styled Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+</head>
+<body>
+
+    <!-- Executive Print-Only Header -->
+    <div class="print-only">
+        <div class="print-header">
+            <div class="print-header-left">
+                <h1>Toyota DX Plan — 2026</h1>
+                <p>Plan de Proyectos y Seguimiento de Tareas Anuales</p>
+            </div>
+            <div class="print-header-right">
+                <p><strong>Presentado a:</strong> Presidencia de la Empresa</p>
+                <p><strong>Fecha del Reporte:</strong> <span id="print-date"></span></p>
+                <p><strong>Avance General:</strong> <span id="print-progress">0%</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        
+        <!-- App Header (Hidden in Print) -->
+        <header class="app-header">
+            <div class="brand-section">
+                <div class="brand-logo">T</div>
+                <div class="brand-info">
+                    <h1>DX Plan</h1>
+                    <p>Tablero de Seguimiento Estratégico</p>
+                </div>
+            </div>
+            
+            <div class="controls-section">
+                <!-- Navigation Tabs -->
+                <nav class="nav-tabs">
+                    <button class="nav-tab active" data-view="dashboard">
+                        <i data-lucide="layout-dashboard"></i> Dashboard
+                    </button>
+                    <button class="nav-tab" data-view="gantt">
+                        <i data-lucide="milestone"></i> Gantt Matrix
+                    </button>
+                    <button class="nav-tab" data-view="kanban">
+                        <i data-lucide="kanban"></i> Kanban
+                    </button>
+                    <button class="nav-tab" data-view="table">
+                        <i data-lucide="table-properties"></i> Tareas
+                    </button>
+                    <button class="nav-tab" data-view="projects">
+                        <i data-lucide="folder-kanban"></i> Proyectos
+                    </button>
+                </nav>
+
+                <!-- Actions -->
+                <select id="role-selector" class="select-filter" style="min-width: auto; padding-right: 1.5rem; background-position: right 0.35rem center; margin-right: 0.5rem;" title="Cambiar Rol de Usuario">
+                    <option value="admin">✏️ Editor</option>
+                    <option value="collaborator">👥 Colaborador</option>
+                    <option value="viewer">👁️ Visor</option>
+                </select>
+                <button class="btn" id="btn-theme-toggle" title="Cambiar Tema">
+                    <i data-lucide="sun"></i>
+                </button>
+                <button class="btn" id="btn-import-trigger" title="Importar Respaldo JSON">
+                    <i data-lucide="upload"></i> Importar
+                </button>
+                <input type="file" id="json-file-input" style="display: none;" accept=".json">
+                <button class="btn" id="btn-export-json" title="Exportar Respaldo JSON">
+                    <i data-lucide="file-json"></i> Respaldo JSON
+                </button>
+                <button class="btn btn-primary" id="btn-export" title="Exportar a Excel">
+                    <i data-lucide="download"></i> Exportar Excel
+                </button>
+                <button class="btn btn-primary" id="btn-print">
+                    <i data-lucide="printer"></i> Imprimir Reporte
+                </button>
+            </div>
+        </header>
+
+        <!-- Filters Toolbar (Hidden in Print) -->
+        <section class="toolbar">
+            <div class="filter-group">
+                <div class="search-input-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="search-text" class="search-input" placeholder="Buscar por tarea o proyecto...">
+                </div>
+                
+                <select id="filter-proyecto" class="select-filter">
+                    <option value="">Todos los Proyectos</option>
+                </select>
+                
+                <select id="filter-responsable" class="select-filter">
+                    <option value="">Todos los Responsables</option>
+                </select>
+                
+                <select id="filter-compania" class="select-filter">
+                    <option value="">Todas las Compañías</option>
+                    <option value="SAR">SAR</option>
+                    <option value="TBAR">TBAR</option>
+                    <option value="TBAR/SAR">TBAR/SAR</option>
+                </select>
+
+                <select id="filter-status" class="select-filter">
+                    <option value="">Todos los Estados</option>
+                    <option value="Not Started">No Iniciado</option>
+                    <option value="In Progress">En Progreso</option>
+                    <option value="Completed">Completado</option>
+                    <option value="Blocked">Bloqueado</option>
+                </select>
+            </div>
+
+            <div class="action-group">
+                <button class="btn" id="btn-reset-filters">
+                    <i data-lucide="rotate-ccw"></i> Limpiar Filtros
+                </button>
+                <button class="btn btn-primary" id="btn-add-task">
+                    <i data-lucide="plus"></i> Nueva Tarea
+                </button>
+            </div>
+        </section>
+
+        <!-- Main View Container -->
+        <main class="view-container">
+
+            <!-- 1. Dashboard Panel -->
+            <div id="dashboard-panel" class="view-panel active">
+                
+                <!-- Cards Grid -->
+                <div class="dashboard-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background-color: #3b82f6;">
+                            <i data-lucide="check-square"></i>
+                        </div>
+                        <div class="kpi-details">
+                            <h3>Total de Tareas</h3>
+                            <div class="value" id="stat-total">0</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background-color: #10b981;">
+                            <i data-lucide="circle-check"></i>
+                        </div>
+                        <div class="kpi-details">
+                            <h3>Completadas</h3>
+                            <div class="value" id="stat-completed" style="color: #34d399;">0</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background-color: #f59e0b;">
+                            <i data-lucide="trending-up"></i>
+                        </div>
+                        <div class="kpi-details">
+                            <h3>En Progreso</h3>
+                            <div class="value" id="stat-progress" style="color: #fbbf24;">0</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background-color: #ef4444;">
+                            <i data-lucide="alert-octagon"></i>
+                        </div>
+                        <div class="kpi-details">
+                            <h3>Bloqueadas</h3>
+                            <div class="value" id="stat-blocked" style="color: #f87171;">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SVG Charts Section -->
+                <div class="chart-section">
+                    <!-- Left: Status Donut Chart -->
+                    <div class="chart-card">
+                        <h2>Estado del Plan Hoshin Kanri</h2>
+                        <div class="chart-content">
+                            <!-- SVG Donut Chart drawn dynamically by JS -->
+                            <div id="donut-chart-wrapper" style="width: 180px; height: 180px; position: relative;">
+                                <svg id="status-donut-svg" width="100%" height="100%" viewBox="0 0 42 42" class="donut">
+                                    <circle class="donut-hole" cx="21" cy="21" r="15.915" fill="transparent"></circle>
+                                    <circle class="donut-ring" cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--border)" stroke-width="4"></circle>
+                                    <circle id="donut-segment-completed" cx="21" cy="21" r="15.915" fill="transparent" stroke="#10b981" stroke-width="4" stroke-dasharray="0 100" stroke-dashoffset="0"></circle>
+                                    <circle id="donut-segment-progress" cx="21" cy="21" r="15.915" fill="transparent" stroke="#f59e0b" stroke-width="4" stroke-dasharray="0 100" stroke-dashoffset="0"></circle>
+                                    <circle id="donut-segment-blocked" cx="21" cy="21" r="15.915" fill="transparent" stroke="#ef4444" stroke-width="4" stroke-dasharray="0 100" stroke-dashoffset="0"></circle>
+                                    <circle id="donut-segment-pending" cx="21" cy="21" r="15.915" fill="transparent" stroke="#64748b" stroke-width="4" stroke-dasharray="0 100" stroke-dashoffset="0"></circle>
+                                </svg>
+                                <div id="donut-center-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                    <div id="donut-pct" style="font-size: 1.5rem; font-weight: 800;">0%</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Avance</div>
+                                </div>
+                            </div>
+                            <div class="chart-legend" id="donut-legend">
+                                <!-- Generated Dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Project Workload & Progress -->
+                    <div class="chart-card">
+                        <h2>Tareas por Proyecto (Top 5 con mayor volumen)</h2>
+                        <div class="chart-content" style="align-items: flex-start;">
+                            <div class="bar-list" id="project-bar-list">
+                                <!-- Generated Dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workload by Responsible Table inside Dashboard -->
+                <div class="chart-card">
+                    <h2>Carga de Trabajo y Eficiencia por Responsable</h2>
+                    <div style="overflow-x: auto; margin-top: 1rem;">
+                        <table class="gantt-table" style="max-height: none; overflow: visible;">
+                            <thead>
+                                <tr>
+                                    <th>Responsable</th>
+                                    <th style="text-align: center;">Total Tareas</th>
+                                    <th style="text-align: center;">Completadas</th>
+                                    <th style="text-align: center;">En Progreso</th>
+                                    <th style="text-align: center;">Bloqueadas</th>
+                                    <th style="text-align: center;">No Iniciadas</th>
+                                    <th style="text-align: center;">% Cumplimiento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="responsible-stats-rows">
+                                <!-- Dynamically generated rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 1.5. Projects Panel -->
+            <div id="projects-panel" class="view-panel">
+                <div class="projects-grid" id="projects-container">
+                    <!-- Project Cards generated dynamically by JS -->
+                </div>
+            </div>
+
+            <!-- 2. Gantt Matrix Panel -->
+            <div id="gantt-panel" class="view-panel">
+                <!-- Gantt Control Sub-toolbar (Hidden in print) -->
+                <div class="toolbar" style="margin-bottom: 0.75rem; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: space-between;">
+                    <!-- Leyenda Plan vs Real -->
+                    <div style="display: flex; align-items: center; gap: 1.5rem; font-size: 0.825rem; color: hsl(var(--text-main));">
+                        <span style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="display: inline-block; width: 16px; height: 6px; border-radius: 1px; background-color: hsl(var(--primary)); opacity: 0.55; border: 1px dashed rgba(255, 255, 255, 0.4);"></span>
+                            <strong>Planificado (Plan)</strong>
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="display: inline-block; width: 16px; height: 6px; border-radius: 1px; background-color: hsl(var(--status-completed));"></span>
+                            <strong>Real (Ejecutado)</strong>
+                        </span>
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; user-select: none; color: hsl(var(--text-main));">
+                        <input type="checkbox" id="gantt-summary-toggle" style="width: 1rem; height: 1rem; cursor: pointer; accent-color: hsl(var(--primary));">
+                        <i data-lucide="layers" style="width: 16px; height: 16px; color: #f59e0b;"></i>
+                        Vista Ejecutiva (Resumir por Proyecto)
+                    </label>
+                </div>
+
+                <div class="gantt-container">
+                    <table class="gantt-table" id="gantt-table-element">
+                        <colgroup id="gantt-colgroup"></colgroup>
+                        <thead>
+                            <tr id="gantt-month-row">
+                                <th rowspan="2" class="sticky-col-1" style="border-bottom: 2px solid hsl(var(--border));">Proyecto</th>
+                                <th rowspan="2" class="sticky-col-2" style="border-bottom: 2px solid hsl(var(--border));">Responsable</th>
+                                <th rowspan="2" class="sticky-col-3" style="border-bottom: 2px solid hsl(var(--border));">Tarea</th>
+                                <th rowspan="2" class="sticky-col-4" style="border-bottom: 2px solid hsl(var(--border));">Compañía</th>
+                                <th rowspan="2" class="sticky-col-5" style="border-bottom: 2px solid hsl(var(--border));">F. Inicio</th>
+                                <th rowspan="2" class="sticky-col-6" style="border-bottom: 2px solid hsl(var(--border));">Duración</th>
+                                <!-- Months Headers inserted dynamically -->
+                            </tr>
+                            <tr id="gantt-week-row">
+                                <!-- Weeks Headers inserted dynamically -->
+                            </tr>
+                        </thead>
+                        <tbody id="gantt-body">
+                            <!-- Tasks rows inserted dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. Kanban Panel -->
+            <div id="kanban-panel" class="view-panel">
+                <div class="kanban-board">
+                    <!-- Column 1: Not Started -->
+                    <div class="kanban-column" data-status="Not Started">
+                        <div class="kanban-column-header">
+                            <span>No Iniciado</span>
+                            <span class="kanban-count" id="count-pending">0</span>
+                        </div>
+                        <div class="kanban-cards-container" id="kanban-container-pending"></div>
+                    </div>
+
+                    <!-- Column 2: In Progress -->
+                    <div class="kanban-column" data-status="In Progress">
+                        <div class="kanban-column-header">
+                            <span>En Progreso</span>
+                            <span class="kanban-count" id="count-progress">0</span>
+                        </div>
+                        <div class="kanban-cards-container" id="kanban-container-progress"></div>
+                    </div>
+
+                    <!-- Column 3: Blocked -->
+                    <div class="kanban-column" data-status="Blocked">
+                        <div class="kanban-column-header" style="border-top-color: hsl(var(--status-blocked));">
+                            <span>Bloqueado</span>
+                            <span class="kanban-count" id="count-blocked">0</span>
+                        </div>
+                        <div class="kanban-cards-container" id="kanban-container-blocked"></div>
+                    </div>
+
+                    <!-- Column 4: Completed -->
+                    <div class="kanban-column" data-status="Completed">
+                        <div class="kanban-column-header" style="border-top-color: hsl(var(--status-completed));">
+                            <span>Completado</span>
+                            <span class="kanban-count" id="count-completed">0</span>
+                        </div>
+                        <div class="kanban-cards-container" id="kanban-container-completed"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Table Panel -->
+            <div id="table-panel" class="view-panel">
+                <div class="gantt-container" style="max-height: calc(100vh - 250px);">
+                    <table class="gantt-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">Proyecto</th>
+                                <th style="width: 15%;">Responsable</th>
+                                <th style="width: 40%;">Tarea</th>
+                                <th style="width: 10%;">Compañía</th>
+                                <th style="width: 10%;">Estado</th>
+                                <th style="width: 10%; text-align: center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Tasks rows inserted dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Task Edit Modal Drawer -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal-drawer">
+            <div class="modal-header">
+                <h2 id="modal-title">Editar Tarea</h2>
+                <button class="modal-close" id="btn-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-task-id">
+                
+                <div class="form-group">
+                    <label for="edit-proyecto">Proyecto</label>
+                    <input type="text" id="edit-proyecto" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-responsable">Responsable</label>
+                    <input type="text" id="edit-responsable" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-tarea">Tarea</label>
+                    <textarea id="edit-tarea" class="form-input" rows="3" required style="resize: vertical;"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-compania">Compañía</label>
+                    <select id="edit-compania" class="form-input">
+                        <option value="SAR">SAR</option>
+                        <option value="TBAR">TBAR</option>
+                        <option value="TBAR/SAR">TBAR/SAR</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-status">Estado</label>
+                    <select id="edit-status" class="form-input">
+                        <option value="Not Started">No Iniciado</option>
+                        <option value="In Progress">En Progreso</option>
+                        <option value="Completed">Completado</option>
+                        <option value="Blocked">Bloqueado</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-notes">Notas / Observaciones</label>
+                    <textarea id="edit-notes" class="form-input" rows="3" placeholder="Añade detalles del estado actual..." style="resize: vertical;"></textarea>
+                </div>
+
+                <!-- Schedule Section in Modal -->
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>Semanas Planificadas</label>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                        Puedes configurar las semanas directamente en el gráfico Gantt haciendo clic en las celdas correspondientes.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btn-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="btn-modal-save">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu for Gantt Cells -->
+    <div id="gantt-context-menu" class="context-menu" style="display: none; position: absolute; z-index: 1000;">
+        <div class="context-menu-item" id="ctx-toggle-plan">
+            <i data-lucide="calendar"></i> <span id="ctx-toggle-plan-text">Plan: Activar Semana</span>
+        </div>
+        <div class="context-menu-item" id="ctx-toggle-real">
+            <i data-lucide="calendar-check"></i> <span id="ctx-toggle-real-text">Real: Activar Semana</span>
+        </div>
+        <div class="context-menu-item" id="ctx-edit-task">
+            <i data-lucide="edit-3"></i> Editar Tarea
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-header">Cambiar Estado</div>
+        <div class="context-menu-item status-option" data-status="Not Started">
+            <span class="status-indicator" style="background-color: #94a3b8;"></span> No Iniciado
+        </div>
+        <div class="context-menu-item status-option" data-status="In Progress">
+            <span class="status-indicator" style="background-color: #f59e0b;"></span> En Progreso
+        </div>
+        <div class="context-menu-item status-option" data-status="Completed">
+            <span class="status-indicator" style="background-color: #10b981;"></span> Completado
+        </div>
+        <div class="context-menu-item status-option" data-status="Blocked">
+            <span class="status-indicator" style="background-color: #ef4444;"></span> Bloqueado
+        </div>
+    </div>
+
+    <!-- Login Screen Overlay -->
+    <div id="login-overlay" style="display: none;">
+        <div class="login-card">
+            <div class="login-logo">T</div>
+            <h2>DX Plan</h2>
+            <p class="login-subtitle">Tablero de Seguimiento Estratégico</p>
+            
+            <div class="form-group" style="margin-top: 1.5rem; text-align: left; width: 100%;">
+                <label for="login-code">Código de Acceso (Editor)</label>
+                <input type="password" id="login-code" class="form-input" placeholder="Introduce el código..." style="width: 100%; text-align: center; font-size: 1.1rem; letter-spacing: 0.2em;">
+            </div>
+            
+            <div id="login-error-msg" class="login-error" style="display: none; margin-top: 0.5rem; color: #f87171; font-size: 0.825rem; font-weight: 600;">
+                Código incorrecto. Inténtalo de nuevo.
+            </div>
+            
+            <button class="btn btn-primary" id="btn-login-submit" style="width: 100%; margin-top: 1.5rem; justify-content: center; padding: 0.75rem;">
+                Ingresar como Editor
+            </button>
+            
+            <div style="margin: 1.25rem 0; color: var(--text-muted); font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+                <span style="height: 1px; background-color: hsl(var(--border)); flex: 1;"></span>
+                <span>o también puedes</span>
+                <span style="height: 1px; background-color: hsl(var(--border)); flex: 1;"></span>
+            </div>
+            
+            <button class="btn" id="btn-login-guest" style="width: 100%; justify-content: center; padding: 0.75rem; border-color: hsl(var(--border));">
+                👁️ Entrar como Invitado (Solo Lectura)
+            </button>
+            
+            <button class="btn" id="btn-login-collaborator" style="width: 100%; margin-top: 0.5rem; justify-content: center; padding: 0.75rem; border-color: hsl(var(--border));">
+                👥 Entrar como Colaborador (Actualizar Real/Estado)
+            </button>
+            
+            <button class="btn" id="btn-login-cancel" style="display: none; width: 100%; margin-top: 0.75rem; justify-content: center; padding: 0.75rem; border: none; background: none; color: var(--text-muted); cursor: pointer; text-decoration: underline;">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <!-- Inject data.js first, then app.js -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+
