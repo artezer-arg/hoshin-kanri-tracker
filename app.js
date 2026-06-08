@@ -157,7 +157,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Función para migrar los planes guardados de 4 semanas a la distribución de semanas reales del calendario (coherente)
 function migrateSchedules(tasksArray) {
+    if (!Array.isArray(tasksArray)) return;
     tasksArray.forEach(task => {
+        if (!task) return;
         if (!task.schedule) return;
         
         // Mapear los elementos existentes para buscar rápido
@@ -300,25 +302,79 @@ function initApp() {
     } else {
         initProjectsMetadata();
     }
+
+    // Asegurar que todos los proyectos actuales en tasks tengan metadata y se guarden
+    let metadataChanged = false;
+    const uniqueProjects = [...new Set(tasks.filter(t => t && t.proyecto).map(t => t.proyecto))];
+    const defaultDescriptions = {
+        "GECAP": "Gestión y Control de Asistencia de Personal. Integración de tableros de control y auditorías.",
+        "Ausentismo": "Seguimiento y control de ausentismo. Desarrollo de portal de ingresos alternativos y tableros métricos.",
+        "PEFF": "Proceso de Eficiencia de Flujo de Fabricación. Análisis, desarrollo y testeo de flujos operativos en planta.",
+        "DX Office": "Digital Transformation Office. Proyectos transversales de automatización de oficinas y soporte de sistemas.",
+        "Double fold": "Línea de doblado doble. Análisis, desarrollo e implementación de mejoras de hardware y software.",
+        "HxH": "Hour by Hour (Hora por Hora). Validación de procesos y desarrollo de herramientas de reporte en planta.",
+        "EOL": "End of Line (Fin de Línea). Análisis del proceso actual, tableros de control y conectividad con retrabajos.",
+        "RPS": "Real-time Production System. Implementación de interfaces con SAP 770 y SAP HANA.",
+        "SCRAP": "Control y reducción de desperdicios. Desarrollo de métricas y adquisición de hardware para control en planta.",
+        "RFID": "Identificación por Radiofrecuencia. Análisis, desarrollo e implementación de hardware RFID en almacenes.",
+        "737D": "Proyecto de automatización de línea 737D. Conexión TASA, impresión inmediata y tableros DOOR-EMS.",
+        "Copilot": "Capacitación y desarrollo de personal para integración de asistentes de código y productividad.",
+        "Digital Twin": "Modelado y simulación de gemelo digital para optimización de procesos y pruebas de planta."
+    };
+    uniqueProjects.forEach(proj => {
+        if (proj && !projectsMetadata[proj]) {
+            projectsMetadata[proj] = {
+                status: "In Progress",
+                description: defaultDescriptions[proj] || `Seguimiento del proyecto ${proj}.`
+            };
+            metadataChanged = true;
+        }
+    });
+    if (metadataChanged) {
+        saveProjectsMetadata();
+    }
     
-    // Si la carga inicial no tiene estados/notas, inicializar
+    // Si la carga inicial no tiene estados/notas, inicializar y guardar
+    let tasksChanged = false;
     tasks.forEach(task => {
         if (!task) return;
+        let changed = false;
         if (!task.status) {
             task.status = "Not Started";
+            changed = true;
         }
         if (!task.notes) {
             task.notes = "";
+            changed = true;
         }
         if (!task.realSchedule) {
             task.realSchedule = [];
+            changed = true;
         }
         // Limpiar strings
+        const origProj = task.proyecto;
         task.proyecto = task.proyecto ? task.proyecto.trim() : "Sin Proyecto";
+        if (origProj !== task.proyecto) changed = true;
+
+        const origResp = task.responsable;
         task.responsable = task.responsable ? task.responsable.trim() : "Sin Responsable";
+        if (origResp !== task.responsable) changed = true;
+
+        const origTarea = task.tarea;
         task.tarea = task.tarea ? task.tarea.trim() : "Sin Tarea";
+        if (origTarea !== task.tarea) changed = true;
+
+        const origComp = task.compania;
         task.compania = task.compania ? task.compania.trim() : "TBAR";
+        if (origComp !== task.compania) changed = true;
+        
+        if (changed) {
+            tasksChanged = true;
+        }
     });
+    if (tasksChanged) {
+        saveToLocalStorage();
+    }
 
     // Rellenar filtros select dinámicos
     populateFilterDropdowns();
@@ -347,8 +403,8 @@ function saveToLocalStorage() {
 
 // Rellenar dropdowns de filtros basados en los datos de las tareas
 function populateFilterDropdowns() {
-    const proyectos = [...new Set(tasks.map(t => t.proyecto))].sort();
-    const responsables = [...new Set(tasks.map(t => t.responsable))].sort();
+    const proyectos = [...new Set(tasks.filter(t => t && t.proyecto).map(t => t.proyecto))].sort();
+    const responsables = [...new Set(tasks.filter(t => t && t.responsable).map(t => t.responsable))].sort();
     
     const filterProyecto = document.getElementById("filter-proyecto");
     const filterResponsable = document.getElementById("filter-responsable");
@@ -800,9 +856,10 @@ function updateThemeIcon() {
 // Obtener tareas filtradas
 function getFilteredTasks() {
     return tasks.filter(task => {
+        if (!task) return false;
         const matchesSearch = !filters.search || 
-            task.tarea.toLowerCase().includes(filters.search) || 
-            task.proyecto.toLowerCase().includes(filters.search);
+            (task.tarea && task.tarea.toLowerCase().includes(filters.search)) || 
+            (task.proyecto && task.proyecto.toLowerCase().includes(filters.search));
         
         const matchesProyecto = !filters.proyecto || task.proyecto === filters.proyecto;
         const matchesResponsable = !filters.responsable || task.responsable === filters.responsable;
@@ -879,13 +936,14 @@ function renderDashboard() {
 }
 
 function calculateStats() {
-    const total = tasks.length;
+    const validTasks = tasks.filter(t => t);
+    const total = validTasks.length;
     if (total === 0) return { total: 0, completed: 0, progress: 0, blocked: 0, pending: 0, pct: 0 };
     
-    const completed = tasks.filter(t => t.status === "Completed").length;
-    const progress = tasks.filter(t => t.status === "In Progress").length;
-    const blocked = tasks.filter(t => t.status === "Blocked").length;
-    const pending = tasks.filter(t => t.status === "Not Started").length;
+    const completed = validTasks.filter(t => t.status === "Completed").length;
+    const progress = validTasks.filter(t => t.status === "In Progress").length;
+    const blocked = validTasks.filter(t => t.status === "Blocked").length;
+    const pending = validTasks.filter(t => t.status === "Not Started").length;
     
     const pct = Math.round((completed / total) * 100);
     
@@ -946,6 +1004,7 @@ function renderProjectWorkloadChart() {
     // Agrupar tareas por proyecto
     const projMap = {};
     tasks.forEach(t => {
+        if (!t || !t.proyecto) return;
         if (!projMap[t.proyecto]) {
             projMap[t.proyecto] = { total: 0, completed: 0 };
         }
@@ -989,6 +1048,7 @@ function renderResponsibleStatsTable() {
     // Agrupar por responsable
     const respMap = {};
     tasks.forEach(t => {
+        if (!t || !t.responsable) return;
         if (!respMap[t.responsable]) {
             respMap[t.responsable] = { total: 0, completed: 0, progress: 0, blocked: 0, pending: 0 };
         }
@@ -2065,7 +2125,7 @@ function initProjectsMetadata() {
     };
     
     // Obtener proyectos únicos de las tareas
-    const uniqueProjects = [...new Set(tasks.map(t => t.proyecto))];
+    const uniqueProjects = [...new Set(tasks.filter(t => t && t.proyecto).map(t => t.proyecto))];
     uniqueProjects.forEach(proj => {
         if (proj) {
             projectsMetadata[proj] = {
@@ -2086,7 +2146,7 @@ function renderProjects() {
     container.innerHTML = "";
     
     // Asegurarse de que todos los proyectos actuales de las tareas existan en metadata
-    const uniqueProjects = [...new Set(tasks.map(t => t.proyecto))];
+    const uniqueProjects = [...new Set(tasks.filter(t => t && t.proyecto).map(t => t.proyecto))];
     uniqueProjects.forEach(proj => {
         if (proj && !projectsMetadata[proj]) {
             projectsMetadata[proj] = {

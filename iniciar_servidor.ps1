@@ -1,11 +1,26 @@
+# Self-elevate to Administrator to allow listening on all network interfaces (0.0.0.0 / *)
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    exit
+}
+
+# Clear screen
+Clear-Host
+
+# Get local IP address
+$ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.0.0.1" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1).IPAddress
+if (-not $ip) { $ip = "localhost" }
 $port = 8081
-$url = "http://localhost:$port/"
+$url = "http://*:$port/"
 
 Write-Host "==========================================================" -ForegroundColor Green
-Write-Host "         Toyota DX Plan - Servidor Local Iniciado" -ForegroundColor Green
+Write-Host "         Toyota DX Plan — Servidor Local Iniciado" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "Para entrar desde esta computadora:" -ForegroundColor White
 Write-Host "  http://localhost:$port" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Para entrar desde CUALQUIER computadora de tu red local:" -ForegroundColor White
+Write-Host "  http://$ip:$port" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "Manten esta ventana abierta para que el servidor siga activo." -ForegroundColor Gray
 Write-Host "Presiona Ctrl+C para detener el servidor." -ForegroundColor Gray
@@ -19,6 +34,7 @@ try {
 } catch {
     Write-Host "Error al iniciar el servidor: $_" -ForegroundColor Red
     Write-Host "Asegurate de que el puerto $port no este en uso." -ForegroundColor Red
+    Read-Host "Presiona Enter para salir..."
     exit
 }
 

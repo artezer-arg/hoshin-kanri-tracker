@@ -798,7 +798,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    flex-content: 1;
+    flex: 1;
 }
 
 .kanban-card {
@@ -1286,10 +1286,10 @@ th.current-week-column::before {
     color: hsl(var(--text-muted));
 }
 
-.context-menu-item#ctx-toggle-week.remove-action {
+.context-menu-item.remove-action {
     color: #ef4444;
 }
-.context-menu-item#ctx-toggle-week.remove-action i {
+.context-menu-item.remove-action i {
     color: #ef4444;
 }
 
