@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="app_title">DX Plan</title>
+    <title>DX Plan</title>
     <link rel="stylesheet" href="styles.css">
     <!-- Lucide Icons via CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -16,13 +16,13 @@
     <div class="print-only">
         <div class="print-header">
             <div class="print-header-left">
-                <h1 data-i18n="app_title_print">Toyota DX Plan — 2026</h1>
-                <p data-i18n="app_subtitle_print">Plan de Proyectos y Seguimiento de Tareas Anuales</p>
+                <h1>Toyota DX Plan — 2026</h1>
+                <p>Plan de Proyectos y Seguimiento de Tareas Anuales</p>
             </div>
             <div class="print-header-right">
-                <p><strong><span data-i18n="print_presented_to">Presentado a:</span></strong> <span data-i18n="print_president">Presidencia de la Empresa</span></p>
-                <p><strong><span data-i18n="print_report_date">Fecha del Reporte:</span></strong> <span id="print-date"></span></p>
-                <p><strong><span data-i18n="print_overall_progress">Avance General:</span></strong> <span id="print-progress">0%</span></p>
+                <p><strong>Presentado a:</strong> Presidencia de la Empresa</p>
+                <p><strong>Fecha del Reporte:</strong> <span id="print-date"></span></p>
+                <p><strong>Avance General:</strong> <span id="print-progress">0%</span></p>
             </div>
         </div>
     </div>
@@ -113,39 +113,39 @@
             <div class="filter-group">
                 <div class="search-input-wrapper">
                     <i data-lucide="search" class="search-icon"></i>
-                    <input type="text" id="search-text" class="search-input" placeholder="Buscar por tarea o proyecto..." data-i18n-placeholder="search_placeholder">
+                    <input type="text" id="search-text" class="search-input" placeholder="Buscar por tarea o proyecto...">
                 </div>
                 
                 <select id="filter-proyecto" class="select-filter">
-                    <option value="" data-i18n="all_projects">Todos los Proyectos</option>
+                    <option value="">Todos los Proyectos</option>
                 </select>
                 
                 <select id="filter-responsable" class="select-filter">
-                    <option value="" data-i18n="all_responsibles">Todos los Responsables</option>
+                    <option value="">Todos los Responsables</option>
                 </select>
                 
                 <select id="filter-compania" class="select-filter">
-                    <option value="" data-i18n="all_companies">Todas las Compañías</option>
+                    <option value="">Todas las Compañías</option>
                     <option value="SAR">SAR</option>
                     <option value="TBAR">TBAR</option>
                     <option value="TBAR/SAR">TBAR/SAR</option>
                 </select>
 
                 <select id="filter-status" class="select-filter">
-                    <option value="" data-i18n="all_statuses">Todos los Estados</option>
-                    <option value="Not Started" data-i18n="status_not_started">No Iniciado</option>
-                    <option value="In Progress" data-i18n="status_in_progress">En Progreso</option>
-                    <option value="Completed" data-i18n="status_completed">Completado</option>
-                    <option value="Blocked" data-i18n="status_blocked">Bloqueado</option>
+                    <option value="">Todos los Estados</option>
+                    <option value="Not Started">No Iniciado</option>
+                    <option value="In Progress">En Progreso</option>
+                    <option value="Completed">Completado</option>
+                    <option value="Blocked">Bloqueado</option>
                 </select>
             </div>
 
             <div class="action-group">
                 <button class="btn" id="btn-reset-filters">
-                    <i data-lucide="rotate-ccw"></i> <span data-i18n="btn_reset_filters">Limpiar Filtros</span>
+                    <i data-lucide="rotate-ccw"></i> Limpiar Filtros
                 </button>
                 <button class="btn btn-primary" id="btn-add-task">
-                    <i data-lucide="plus"></i> <span data-i18n="btn_add_task">Nueva Tarea</span>
+                    <i data-lucide="plus"></i> Nueva Tarea
                 </button>
             </div>
         </section>
@@ -163,7 +163,7 @@
                             <i data-lucide="check-square"></i>
                         </div>
                         <div class="kpi-details">
-                            <h3 data-i18n="kpi_total">Total de Tareas</h3>
+                            <h3>Total de Tareas</h3>
                             <div class="value" id="stat-total">0</div>
                         </div>
                     </div>
@@ -172,7 +172,7 @@
                             <i data-lucide="circle-check"></i>
                         </div>
                         <div class="kpi-details">
-                            <h3 data-i18n="kpi_completed">Completadas</h3>
+                            <h3>Completadas</h3>
                             <div class="value" id="stat-completed" style="color: #34d399;">0</div>
                         </div>
                     </div>
@@ -181,7 +181,7 @@
                             <i data-lucide="trending-up"></i>
                         </div>
                         <div class="kpi-details">
-                            <h3 data-i18n="kpi_progress">En Progreso</h3>
+                            <h3>En Progreso</h3>
                             <div class="value" id="stat-progress" style="color: #fbbf24;">0</div>
                         </div>
                     </div>
@@ -190,7 +190,7 @@
                             <i data-lucide="alert-octagon"></i>
                         </div>
                         <div class="kpi-details">
-                            <h3 data-i18n="kpi_blocked">Bloqueadas</h3>
+                            <h3>Bloqueadas</h3>
                             <div class="value" id="stat-blocked" style="color: #f87171;">0</div>
                         </div>
                     </div>
@@ -200,7 +200,7 @@
                 <div class="chart-section">
                     <!-- Left: Status Donut Chart -->
                     <div class="chart-card">
-                        <h2 data-i18n="chart_donut_title">Estado del Plan Hoshin Kanri</h2>
+                        <h2>Estado del Plan Hoshin Kanri</h2>
                         <div class="chart-content">
                             <!-- SVG Donut Chart drawn dynamically by JS -->
                             <div id="donut-chart-wrapper" style="width: 180px; height: 180px; position: relative;">
@@ -214,7 +214,7 @@
                                 </svg>
                                 <div id="donut-center-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
                                     <div id="donut-pct" style="font-size: 1.5rem; font-weight: 800;">0%</div>
-                                    <div data-i18n="chart_donut_progress" style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Avance</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Avance</div>
                                 </div>
                             </div>
                             <div class="chart-legend" id="donut-legend">
@@ -225,7 +225,7 @@
 
                     <!-- Right: Project Workload & Progress -->
                     <div class="chart-card">
-                        <h2 data-i18n="chart_bars_title">Tareas por Proyecto (Top 5 con mayor volumen)</h2>
+                        <h2>Tareas por Proyecto (Top 5 con mayor volumen)</h2>
                         <div class="chart-content" style="align-items: flex-start;">
                             <div class="bar-list" id="project-bar-list">
                                 <!-- Generated Dynamically -->
@@ -236,18 +236,18 @@
 
                 <!-- Workload by Responsible Table inside Dashboard -->
                 <div class="chart-card">
-                    <h2 data-i18n="chart_workload_title">Carga de Trabajo y Eficiencia por Responsable</h2>
+                    <h2>Carga de Trabajo y Eficiencia por Responsable</h2>
                     <div style="overflow-x: auto; margin-top: 1rem;">
                         <table class="gantt-table" style="max-height: none; overflow: visible;">
                             <thead>
                                 <tr>
-                                    <th data-i18n="table_resp">Responsable</th>
-                                    <th data-i18n="table_total" style="text-align: center;">Total Tareas</th>
-                                    <th data-i18n="table_comp" style="text-align: center;">Completadas</th>
-                                    <th data-i18n="table_prog" style="text-align: center;">En Progreso</th>
-                                    <th data-i18n="table_block" style="text-align: center;">Bloqueadas</th>
-                                    <th data-i18n="table_pending" style="text-align: center;">No Iniciadas</th>
-                                    <th data-i18n="table_pct" style="text-align: center;">% Cumplimiento</th>
+                                    <th>Responsable</th>
+                                    <th style="text-align: center;">Total Tareas</th>
+                                    <th style="text-align: center;">Completadas</th>
+                                    <th style="text-align: center;">En Progreso</th>
+                                    <th style="text-align: center;">Bloqueadas</th>
+                                    <th style="text-align: center;">No Iniciadas</th>
+                                    <th style="text-align: center;">% Cumplimiento</th>
                                 </tr>
                             </thead>
                             <tbody id="responsible-stats-rows">
@@ -271,17 +271,17 @@
                 <div class="chart-section" style="grid-template-columns: 2fr 1fr;">
                     <!-- List of Users -->
                     <div class="chart-card">
-                        <h2 data-i18n="users_title">Personal con Acceso Autorizado</h2>
-                        <p id="users-subtitle-el" data-i18n-html="users_subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        <h2>Personal con Acceso Autorizado</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
                             El usuario <strong>nramirez</strong> siempre tiene permisos de <strong>Editor</strong> (Administrador). Los usuarios listados aquí tendrán permisos de <strong>Colaborador</strong>. Cualquier otro usuario de Windows no registrado tendrá permisos de <strong>Visor</strong> (Solo lectura).
                         </p>
                         <div style="overflow-x: auto;">
                             <table class="gantt-table">
                                 <thead>
                                     <tr>
-                                        <th data-i18n="users_th_username">Usuario Windows</th>
-                                        <th data-i18n="users_th_role">Rol asignado</th>
-                                        <th data-i18n="users_th_actions" style="text-align: center; width: 120px;">Acciones</th>
+                                        <th>Usuario Windows</th>
+                                        <th>Rol asignado</th>
+                                        <th style="text-align: center; width: 120px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="users-table-body">
@@ -293,14 +293,14 @@
 
                     <!-- Add User Form -->
                     <div class="chart-card">
-                        <h2 data-i18n="users_form_title">Registrar Colaborador</h2>
+                        <h2>Registrar Colaborador</h2>
                         <div style="margin-top: 1rem;">
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label for="new-collab-username" data-i18n="users_form_username">Nombre de Usuario Windows</label>
-                                <input type="text" id="new-collab-username" class="form-input" placeholder="ej. jsmith" data-i18n-placeholder="users_form_placeholder" style="width: 100%; margin-top: 0.5rem;">
+                                <label for="new-collab-username">Nombre de Usuario Windows</label>
+                                <input type="text" id="new-collab-username" class="form-input" placeholder="ej. jsmith" style="width: 100%; margin-top: 0.5rem;">
                             </div>
                             <button class="btn btn-primary" id="btn-add-collab" style="width: 100%; display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem;">
-                                <i data-lucide="user-plus"></i> <span data-i18n="users_form_btn">Registrar Colaborador</span>
+                                <i data-lucide="user-plus"></i> Registrar Colaborador
                             </button>
                         </div>
                     </div>
@@ -315,17 +315,17 @@
                     <div style="display: flex; align-items: center; gap: 1.5rem; font-size: 0.825rem; color: hsl(var(--text-main));">
                         <span style="display: flex; align-items: center; gap: 0.5rem;">
                             <span style="display: inline-block; width: 16px; height: 6px; border-radius: 1px; background-color: hsl(var(--primary)); opacity: 0.55; border: 1px dashed rgba(255, 255, 255, 0.4);"></span>
-                            <strong><span data-i18n="gantt_legend_plan">Planificado (Plan)</span></strong>
+                            <strong>Planificado (Plan)</strong>
                         </span>
                         <span style="display: flex; align-items: center; gap: 0.5rem;">
                             <span style="display: inline-block; width: 16px; height: 6px; border-radius: 1px; background-color: hsl(var(--status-completed));"></span>
-                            <strong><span data-i18n="gantt_legend_real">Real (Ejecutado)</span></strong>
+                            <strong>Real (Ejecutado)</strong>
                         </span>
                     </div>
                     <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; user-select: none; color: hsl(var(--text-main));">
                         <input type="checkbox" id="gantt-summary-toggle" style="width: 1rem; height: 1rem; cursor: pointer; accent-color: hsl(var(--primary));">
                         <i data-lucide="layers" style="width: 16px; height: 16px; color: #f59e0b;"></i>
-                        <span data-i18n="gantt_executive_view">Vista Ejecutiva (Resumir por Proyecto)</span>
+                        Vista Ejecutiva (Resumir por Proyecto)
                     </label>
                 </div>
 
@@ -334,12 +334,12 @@
                         <colgroup id="gantt-colgroup"></colgroup>
                         <thead>
                             <tr id="gantt-month-row">
-                                <th rowspan="2" class="sticky-col-1" style="border-bottom: 2px solid hsl(var(--border));" data-i18n="gantt_th_project">Proyecto</th>
-                                <th rowspan="2" class="sticky-col-2" style="border-bottom: 2px solid hsl(var(--border));" data-i18n="gantt_th_responsible">Responsable</th>
-                                <th rowspan="2" class="sticky-col-3" style="border-bottom: 2px solid hsl(var(--border));" data-i18n="gantt_th_task">Tarea</th>
-                                <th rowspan="2" class="sticky-col-4" style="border-bottom: 2px solid hsl(var(--border));" data-i18n="gantt_th_company">Compañía</th>
-                                <th rowspan="2" class="sticky-col-5" style="border-bottom: 2px solid hsl(var(--border));" data-i18n="gantt_th_start">F. Inicio</th>
-                                <th rowspan="2" class="sticky-col-6" style="border-bottom: 2px solid hsl(var(--border));" data-i18n="gantt_th_duration">Duración</th>
+                                <th rowspan="2" class="sticky-col-1" style="border-bottom: 2px solid hsl(var(--border));">Proyecto</th>
+                                <th rowspan="2" class="sticky-col-2" style="border-bottom: 2px solid hsl(var(--border));">Responsable</th>
+                                <th rowspan="2" class="sticky-col-3" style="border-bottom: 2px solid hsl(var(--border));">Tarea</th>
+                                <th rowspan="2" class="sticky-col-4" style="border-bottom: 2px solid hsl(var(--border));">Compañía</th>
+                                <th rowspan="2" class="sticky-col-5" style="border-bottom: 2px solid hsl(var(--border));">F. Inicio</th>
+                                <th rowspan="2" class="sticky-col-6" style="border-bottom: 2px solid hsl(var(--border));">Duración</th>
                                 <!-- Months Headers inserted dynamically -->
                             </tr>
                             <tr id="gantt-week-row">
@@ -359,7 +359,7 @@
                     <!-- Column 1: Not Started -->
                     <div class="kanban-column" data-status="Not Started">
                         <div class="kanban-column-header">
-                            <span data-i18n="kanban_col_not_started">No Iniciado</span>
+                            <span>No Iniciado</span>
                             <span class="kanban-count" id="count-pending">0</span>
                         </div>
                         <div class="kanban-cards-container" id="kanban-container-pending"></div>
@@ -368,7 +368,7 @@
                     <!-- Column 2: In Progress -->
                     <div class="kanban-column" data-status="In Progress">
                         <div class="kanban-column-header">
-                            <span data-i18n="kanban_col_in_progress">En Progreso</span>
+                            <span>En Progreso</span>
                             <span class="kanban-count" id="count-progress">0</span>
                         </div>
                         <div class="kanban-cards-container" id="kanban-container-progress"></div>
@@ -377,7 +377,7 @@
                     <!-- Column 3: Blocked -->
                     <div class="kanban-column" data-status="Blocked">
                         <div class="kanban-column-header" style="border-top-color: hsl(var(--status-blocked));">
-                            <span data-i18n="kanban_col_blocked">Bloqueado</span>
+                            <span>Bloqueado</span>
                             <span class="kanban-count" id="count-blocked">0</span>
                         </div>
                         <div class="kanban-cards-container" id="kanban-container-blocked"></div>
@@ -386,7 +386,7 @@
                     <!-- Column 4: Completed -->
                     <div class="kanban-column" data-status="Completed">
                         <div class="kanban-column-header" style="border-top-color: hsl(var(--status-completed));">
-                            <span data-i18n="kanban_col_completed">Completado</span>
+                            <span>Completado</span>
                             <span class="kanban-count" id="count-completed">0</span>
                         </div>
                         <div class="kanban-cards-container" id="kanban-container-completed"></div>
@@ -400,12 +400,12 @@
                     <table class="gantt-table">
                         <thead>
                             <tr>
-                                <th style="width: 15%;" data-i18n="table_th_project">Proyecto</th>
-                                <th style="width: 15%;" data-i18n="table_th_responsible">Responsable</th>
-                                <th style="width: 40%;" data-i18n="table_th_task">Tarea</th>
-                                <th style="width: 10%;" data-i18n="table_th_company">Compañía</th>
-                                <th style="width: 10%;" data-i18n="table_th_status">Estado</th>
-                                <th style="width: 10%; text-align: center;" data-i18n="table_th_action">Acción</th>
+                                <th style="width: 15%;">Proyecto</th>
+                                <th style="width: 15%;">Responsable</th>
+                                <th style="width: 40%;">Tarea</th>
+                                <th style="width: 10%;">Compañía</th>
+                                <th style="width: 10%;">Estado</th>
+                                <th style="width: 10%; text-align: center;">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="table-body">
@@ -422,29 +422,29 @@
     <div class="modal-overlay" id="edit-modal">
         <div class="modal-drawer">
             <div class="modal-header">
-                <h2 id="modal-title" data-i18n="modal_title_edit">Editar Tarea</h2>
+                <h2 id="modal-title">Editar Tarea</h2>
                 <button class="modal-close" id="btn-modal-close">&times;</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="edit-task-id">
                 
                 <div class="form-group">
-                    <label for="edit-proyecto" data-i18n="modal_label_project">Proyecto</label>
+                    <label for="edit-proyecto">Proyecto</label>
                     <input type="text" id="edit-proyecto" class="form-input" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-responsable" data-i18n="modal_label_responsible">Responsable</label>
+                    <label for="edit-responsable">Responsable</label>
                     <input type="text" id="edit-responsable" class="form-input" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-tarea" data-i18n="modal_label_task">Tarea</label>
+                    <label for="edit-tarea">Tarea</label>
                     <textarea id="edit-tarea" class="form-input" rows="3" required style="resize: vertical;"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-compania" data-i18n="modal_label_company">Compañía</label>
+                    <label for="edit-compania">Compañía</label>
                     <select id="edit-compania" class="form-input">
                         <option value="SAR">SAR</option>
                         <option value="TBAR">TBAR</option>
@@ -453,31 +453,31 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-status" data-i18n="modal_label_status">Estado</label>
+                    <label for="edit-status">Estado</label>
                     <select id="edit-status" class="form-input">
-                        <option value="Not Started" data-i18n="status_not_started">No Iniciado</option>
-                        <option value="In Progress" data-i18n="status_in_progress">En Progreso</option>
-                        <option value="Completed" data-i18n="status_completed">Completado</option>
-                        <option value="Blocked" data-i18n="status_blocked">Bloqueado</option>
+                        <option value="Not Started">No Iniciado</option>
+                        <option value="In Progress">En Progreso</option>
+                        <option value="Completed">Completado</option>
+                        <option value="Blocked">Bloqueado</option>
                     </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="edit-notes" data-i18n="modal_label_notes">Notas / Observaciones</label>
-                    <textarea id="edit-notes" class="form-input" rows="3" placeholder="Añade detalles del estado actual..." data-i18n-placeholder="modal_label_notes_placeholder" style="resize: vertical;"></textarea>
+                    <label for="edit-notes">Notas / Observaciones</label>
+                    <textarea id="edit-notes" class="form-input" rows="3" placeholder="Añade detalles del estado actual..." style="resize: vertical;"></textarea>
                 </div>
 
                 <!-- Schedule Section in Modal -->
                 <div class="form-group" style="margin-top: 1rem;">
-                    <label data-i18n="modal_label_planned_weeks">Semanas Planificadas</label>
-                    <p data-i18n="modal_label_weeks_helper" style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                    <label>Semanas Planificadas</label>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">
                         Puedes configurar las semanas directamente en el gráfico Gantt haciendo clic en las celdas correspondientes.
                     </p>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn" id="btn-modal-cancel" data-i18n="modal_btn_cancel">Cancelar</button>
-                <button class="btn btn-primary" id="btn-modal-save" data-i18n="modal_btn_save">Guardar</button>
+                <button class="btn" id="btn-modal-cancel">Cancelar</button>
+                <button class="btn btn-primary" id="btn-modal-save">Guardar</button>
             </div>
         </div>
     </div>
@@ -485,27 +485,27 @@
     <!-- Context Menu for Gantt Cells -->
     <div id="gantt-context-menu" class="context-menu" style="display: none; position: absolute; z-index: 1000;">
         <div class="context-menu-item" id="ctx-toggle-plan">
-            <i data-lucide="calendar"></i> <span id="ctx-toggle-plan-text" data-i18n="ctx_plan_activate">Plan: Activar Semana</span>
+            <i data-lucide="calendar"></i> <span id="ctx-toggle-plan-text">Plan: Activar Semana</span>
         </div>
         <div class="context-menu-item" id="ctx-toggle-real">
-            <i data-lucide="calendar-check"></i> <span id="ctx-toggle-real-text" data-i18n="ctx_real_activate">Real: Activar Semana</span>
+            <i data-lucide="calendar-check"></i> <span id="ctx-toggle-real-text">Real: Activar Semana</span>
         </div>
         <div class="context-menu-item" id="ctx-edit-task">
-            <i data-lucide="edit-3"></i> <span data-i18n="ctx_edit_task">Editar Tarea</span>
+            <i data-lucide="edit-3"></i> Editar Tarea
         </div>
         <div class="context-menu-divider"></div>
-        <div class="context-menu-header" data-i18n="ctx_change_status">Cambiar Estado</div>
+        <div class="context-menu-header">Cambiar Estado</div>
         <div class="context-menu-item status-option" data-status="Not Started">
-            <span class="status-indicator" style="background-color: #94a3b8;"></span> <span data-i18n="status_not_started">No Iniciado</span>
+            <span class="status-indicator" style="background-color: #94a3b8;"></span> No Iniciado
         </div>
         <div class="context-menu-item status-option" data-status="In Progress">
-            <span class="status-indicator" style="background-color: #f59e0b;"></span> <span data-i18n="status_in_progress">En Progreso</span>
+            <span class="status-indicator" style="background-color: #f59e0b;"></span> En Progreso
         </div>
         <div class="context-menu-item status-option" data-status="Completed">
-            <span class="status-indicator" style="background-color: #10b981;"></span> <span data-i18n="status_completed">Completado</span>
+            <span class="status-indicator" style="background-color: #10b981;"></span> Completado
         </div>
         <div class="context-menu-item status-option" data-status="Blocked">
-            <span class="status-indicator" style="background-color: #ef4444;"></span> <span data-i18n="status_blocked">Bloqueado</span>
+            <span class="status-indicator" style="background-color: #ef4444;"></span> Bloqueado
         </div>
     </div>
 
@@ -513,38 +513,38 @@
     <div id="login-overlay" style="display: none;">
         <div class="login-card">
             <div class="login-logo">T</div>
-            <h2 data-i18n="app_title">DX Plan</h2>
-            <p class="login-subtitle" data-i18n="app_subtitle">Tablero de Seguimiento Estratégico</p>
+            <h2>DX Plan</h2>
+            <p class="login-subtitle">Tablero de Seguimiento Estratégico</p>
             
             <div class="form-group" style="margin-top: 1.5rem; text-align: left; width: 100%;">
-                <label for="login-code" data-i18n="login_title">Código de Acceso (Editor)</label>
-                <input type="password" id="login-code" class="form-input" placeholder="Introduce el código..." data-i18n-placeholder="login_placeholder" style="width: 100%; text-align: center; font-size: 1.1rem; letter-spacing: 0.2em;">
+                <label for="login-code">Código de Acceso (Editor)</label>
+                <input type="password" id="login-code" class="form-input" placeholder="Introduce el código..." style="width: 100%; text-align: center; font-size: 1.1rem; letter-spacing: 0.2em;">
             </div>
             
-            <div id="login-error-msg" class="login-error" style="display: none; margin-top: 0.5rem; color: #f87171; font-size: 0.825rem; font-weight: 600;" data-i18n="login_error">
+            <div id="login-error-msg" class="login-error" style="display: none; margin-top: 0.5rem; color: #f87171; font-size: 0.825rem; font-weight: 600;">
                 Código incorrecto. Inténtalo de nuevo.
             </div>
             
             <button class="btn btn-primary" id="btn-login-submit" style="width: 100%; margin-top: 1.5rem; justify-content: center; padding: 0.75rem;">
-                <span data-i18n="login_btn_submit">Ingresar como Editor</span>
+                Ingresar como Editor
             </button>
             
             <div style="margin: 1.25rem 0; color: var(--text-muted); font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
                 <span style="height: 1px; background-color: hsl(var(--border)); flex: 1;"></span>
-                <span data-i18n="login_or">o también puedes</span>
+                <span>o también puedes</span>
                 <span style="height: 1px; background-color: hsl(var(--border)); flex: 1;"></span>
             </div>
             
             <button class="btn" id="btn-login-guest" style="width: 100%; justify-content: center; padding: 0.75rem; border-color: hsl(var(--border));">
-                <span data-i18n="login_btn_guest">👁️ Entrar como Invitado (Solo Lectura)</span>
+                👁️ Entrar como Invitado (Solo Lectura)
             </button>
             
             <button class="btn" id="btn-login-collaborator" style="width: 100%; margin-top: 0.5rem; justify-content: center; padding: 0.75rem; border-color: hsl(var(--border));">
-                <span data-i18n="login_btn_collab">👥 Entrar como Colaborador (Actualizar Real/Estado)</span>
+                👥 Entrar como Colaborador (Actualizar Real/Estado)
             </button>
             
             <button class="btn" id="btn-login-cancel" style="display: none; width: 100%; margin-top: 0.75rem; justify-content: center; padding: 0.75rem; border: none; background: none; color: var(--text-muted); cursor: pointer; text-decoration: underline;">
-                <span data-i18n="login_btn_cancel">Cancelar</span>
+                Cancelar
             </button>
         </div>
     </div>
@@ -554,3 +554,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+

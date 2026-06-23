@@ -41,6 +41,9 @@ try {
 $currentDir = $PSScriptRoot
 if (-not $currentDir) { $currentDir = Get-Location }
 
+# Real-time active users list
+$global:ActiveUsers = @{}
+
 # Keep listening
 while ($listener.IsListening) {
     try {
@@ -49,6 +52,53 @@ while ($listener.IsListening) {
         $response = $context.Response
 
         $rawUrl = $request.Url.LocalPath
+        if ($rawUrl -eq "/api/user") {
+            $response.ContentType = "application/json"
+            $username = ""
+            if ($request.IsLocal) {
+                $username = $env:USERNAME
+            }
+            $userJson = '{"username":"' + $username + '"}'
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($userJson)
+            $response.ContentLength64 = $bytes.Length
+            $response.OutputStream.Write($bytes, 0, $bytes.Length)
+            $response.Close()
+            continue
+        }
+        if ($rawUrl -eq "/api/heartbeat") {
+            $username = $request.QueryString["username"]
+            if ($username) {
+                $username = $username.Trim()
+                $global:ActiveUsers[$username] = [DateTime]::Now
+            }
+            
+            # Remove inactive users (no heartbeat in last 15 seconds)
+            $now = [DateTime]::Now
+            $expired = @()
+            foreach ($user in $global:ActiveUsers.Keys) {
+                $diff = $now - $global:ActiveUsers[$user]
+                if ($diff.TotalSeconds -gt 15) {
+                    $expired += $user
+                }
+            }
+            foreach ($user in $expired) {
+                $global:ActiveUsers.Remove($user)
+            }
+            
+            # Format JSON response containing the list of active users
+            $activeArray = @()
+            foreach ($user in $global:ActiveUsers.Keys) {
+                $activeArray += $user
+            }
+            $jsonList = "[" + (($activeArray | ForEach-Object { '"' + $_ + '"' }) -join ",") + "]"
+            
+            $response.ContentType = "application/json"
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($jsonList)
+            $response.ContentLength64 = $bytes.Length
+            $response.OutputStream.Write($bytes, 0, $bytes.Length)
+            $response.Close()
+            continue
+        }
         if ($rawUrl -eq "/") { $rawUrl = "/index.html" }
         
         $filePath = Join-Path $currentDir $rawUrl

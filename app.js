@@ -32,6 +32,491 @@ let tasks = [];
 let projectsMetadata = {};
 let currentView = "dashboard";
 let currentUserRole = "admin"; // Rol por defecto
+let windowsUsername = "";
+let collaboratorsList = [];
+
+// Idioma y traducción
+let currentLanguage = localStorage.getItem("hoshin_lang") || "es";
+
+const TRANSLATIONS = {
+    es: {
+        app_title: "DX Plan",
+        app_title_print: "Toyota DX Plan — 2026",
+        app_subtitle_print: "Plan de Proyectos y Seguimiento de Tareas Anuales",
+        print_presented_to: "Presentado a:",
+        print_president: "Presidencia de la Empresa",
+        print_report_date: "Fecha del Reporte:",
+        print_overall_progress: "Avance General:",
+        app_subtitle: "Tablero de Seguimiento Estratégico",
+        nav_dashboard: "Dashboard",
+        nav_gantt: "Gantt Matrix",
+        nav_kanban: "Kanban",
+        nav_tasks: "Tareas",
+        nav_projects: "Proyectos",
+        nav_users: "Usuarios",
+        role_admin: "✏️ Editor",
+        role_collaborator: "👥 Colaborador",
+        role_viewer: "👁️ Visor",
+        btn_import: "Importar",
+        btn_backup: "Respaldo JSON",
+        btn_export: "Exportar Excel",
+        btn_print: "Imprimir Reporte",
+        search_placeholder: "Buscar por tarea o proyecto...",
+        all_projects: "Todos los Proyectos",
+        all_responsibles: "Todos los Responsables",
+        all_companies: "Todas las Compañías",
+        all_statuses: "Todos los Estados",
+        status_not_started: "No Iniciado",
+        status_in_progress: "En Progreso",
+        status_completed: "Completado",
+        status_blocked: "Bloqueado",
+        btn_reset_filters: "Limpiar Filtros",
+        btn_add_task: "Nueva Tarea",
+        kpi_total: "Total de Tareas",
+        kpi_completed: "Completadas",
+        kpi_progress: "En Progreso",
+        kpi_blocked: "Bloqueadas",
+        chart_donut_title: "Estado del Plan Hoshin Kanri",
+        chart_donut_progress: "Avance",
+        chart_bars_title: "Tareas por Proyecto (Top 5 con mayor volumen)",
+        chart_workload_title: "Carga de Trabajo y Eficiencia por Responsable",
+        table_resp: "Responsable",
+        table_total: "Total Tareas",
+        table_comp: "Completadas",
+        table_prog: "En Progreso",
+        table_block: "Bloqueadas",
+        table_pending: "No Iniciadas",
+        table_pct: "% Cumplimiento",
+        gantt_legend_plan: "Planificado (Plan)",
+        gantt_legend_real: "Real (Ejecutado)",
+        gantt_executive_view: "Vista Ejecutiva (Resumir por Proyecto)",
+        gantt_th_project: "Proyecto",
+        gantt_th_responsible: "Responsable",
+        gantt_th_task: "Tarea",
+        gantt_th_company: "Compañía",
+        gantt_th_start: "F. Inicio",
+        gantt_th_duration: "Duración",
+        gantt_th_action: "Acción",
+        kanban_col_not_started: "No Iniciado",
+        kanban_col_in_progress: "En Progreso",
+        kanban_col_blocked: "Bloqueado",
+        kanban_col_completed: "Completado",
+        table_th_project: "Proyecto",
+        table_th_responsible: "Responsable",
+        table_th_task: "Tarea",
+        table_th_company: "Compañía",
+        table_th_status: "Estado",
+        table_th_action: "Acción",
+        modal_title_edit: "Editar Tarea",
+        modal_title_new: "Nueva Tarea Hoshin",
+        modal_title_details: "Detalles de la Tarea",
+        modal_label_project: "Proyecto",
+        modal_label_responsible: "Responsable",
+        modal_label_task: "Tarea",
+        modal_label_company: "Compañía",
+        modal_label_status: "Estado",
+        modal_label_notes: "Notas / Observaciones",
+        modal_label_notes_placeholder: "Añade detalles del estado actual...",
+        modal_label_planned_weeks: "Semanas Planificadas",
+        modal_label_weeks_helper: "Puedes configurar las semanas directamente en el gráfico Gantt haciendo clic en las celdas correspondientes.",
+        modal_btn_cancel: "Cancelar",
+        modal_btn_save: "Guardar",
+        modal_btn_delete: "Eliminar",
+        ctx_plan_activate: "Plan: Activar Semana",
+        ctx_plan_deactivate: "Plan: Eliminar Semana",
+        ctx_real_activate: "Real: Activar Semana",
+        ctx_real_deactivate: "Real: Eliminar Semana",
+        ctx_edit_task: "Editar Tarea",
+        ctx_change_status: "Cambiar Estado",
+        users_title: "Personal con Acceso Autorizado",
+        users_subtitle: "El usuario <strong>nramirez</strong> siempre tiene permisos de <strong>Editor</strong> (Administrador). Los usuarios listados aquí tendrán permisos de <strong>Colaborador</strong>. Cualquier otro usuario de Windows no registrado tendrá permisos de <strong>Visor</strong> (Solo lectura).",
+        users_th_username: "Usuario Windows",
+        users_th_role: "Rol asignado",
+        users_th_actions: "Acciones",
+        users_form_title: "Registrar Colaborador",
+        users_form_username: "Nombre de Usuario Windows",
+        users_form_placeholder: "ej. jsmith",
+        users_form_btn: "Registrar Colaborador",
+        login_title: "Código de Acceso (Editor)",
+        login_placeholder: "Introduce el código...",
+        login_error: "Código incorrecto. Inténtalo de nuevo.",
+        login_btn_submit: "Ingresar como Editor",
+        login_or: "o también puedes",
+        login_btn_guest: "👁️ Entrar como Invitado (Solo Lectura)",
+        login_btn_collab: "👥 Entrar como Colaborador (Actualizar Real/Estado)",
+        login_btn_cancel: "Cancelar",
+        confirm_import: "¿Estás seguro de importar {count} tareas? Esto sobrescribirá los datos actuales.",
+        import_success: "Tareas y configuraciones importadas con éxito.",
+        confirm_delete_task: "¿Estás seguro de que deseas eliminar esta tarea permanentemente?",
+        confirm_remove_user: "¿Estás seguro de quitar los permisos de colaborador al usuario \"{user}\"?",
+        error_fields_required: "Por favor completa los campos obligatorios: Proyecto, Responsable y Tarea.",
+        error_exceljs: "La biblioteca de Excel (ExcelJS) no está cargada. Revisa tu conexión a internet.",
+        excel_sheet_executive: "Resumen Ejecutivo",
+        excel_sheet_detailed: "Matriz Gantt Detallada",
+        excel_sheet_tasks: "Detalle de Tareas",
+        excel_th_weeks: "Semanas Planificadas",
+        excel_th_notes: "Notas / Observaciones",
+        excel_legend_title: "Referencia Visual (Leyenda Gantt):",
+        excel_legend_top: "Fila Superior (Celda de Arriba)",
+        excel_legend_top_val: "Semanas Planificadas (Plan)",
+        excel_legend_bottom: "Fila Inferior (Celda de Abajo)",
+        excel_legend_bottom_val: "Semanas Ejecutadas (Real) según estado de la tarea:",
+        excel_duration_weeks: "{count} sem.",
+        excel_project_tasks_count: "[{count} tareas] ",
+        online_users_prefix: "Conectados: ",
+        online_users_loading: "Conectados: ...",
+        role_label_admin: "Editor",
+        role_label_collaborator: "Colaborador",
+        role_label_viewer: "Visor",
+        project_card_progress: "Progreso del Proyecto",
+        project_card_tasks: "{completed}/{total} Tareas ({pct}%)",
+        project_card_desc_placeholder: "Escribe una descripción del proyecto...",
+        project_card_btn_filter: "Filtrar Gantt",
+        project_card_tasks_count: "[{count} tareas]",
+        badge_tasks_count: "tareas",
+        active_users_label: "Conectados: ",
+        admin_permanent_label: "Editor (Permanente)",
+        admin_cannot_delete: "El Administrador/Editor principal no puede ser eliminado",
+        delete_collaborator_tooltip: "Eliminar Colaborador",
+        excel_project_description: "Descripción del Proyecto",
+        excel_legend_pending: "No Iniciado / Pendiente",
+        error_backup_failed: "Ocurrió un error al generar la copia de seguridad: ",
+        error_username_required: "Por favor, introduce un nombre de usuario de Windows.",
+        error_admin_permanent: "El usuario 'nramirez' es el Editor permanente y no necesita ser agregado.",
+        error_user_already_registered: "Este usuario ya está registrado como colaborador.",
+        prompt_windows_username: "Por favor, introduce tu nombre de usuario de Windows para identificarte:",
+        edit_details_tooltip: "Editar Detalles",
+        btn_fullscreen: "Pantalla Completa",
+        btn_exit_fullscreen: "Salir de Pantalla Completa",
+        excel_export_error: "Error al exportar a Excel: "
+    },
+    en: {
+        app_title: "DX Plan",
+        app_title_print: "Toyota DX Plan — 2026",
+        app_subtitle_print: "Annual Project Planning and Task Tracking",
+        print_presented_to: "Presented to:",
+        print_president: "Company Presidency",
+        print_report_date: "Report Date:",
+        print_overall_progress: "Overall Progress:",
+        app_subtitle: "Strategic Tracking Board",
+        nav_dashboard: "Dashboard",
+        nav_gantt: "Gantt Matrix",
+        nav_kanban: "Kanban",
+        nav_tasks: "Tasks",
+        nav_projects: "Projects",
+        nav_users: "Users",
+        role_admin: "✏️ Editor",
+        role_collaborator: "👥 Collaborator",
+        role_viewer: "👁️ Viewer",
+        btn_import: "Import",
+        btn_backup: "JSON Backup",
+        btn_export: "Export Excel",
+        btn_print: "Print Report",
+        search_placeholder: "Search by task or project...",
+        all_projects: "All Projects",
+        all_responsibles: "All Responsibles",
+        all_companies: "All Companies",
+        all_statuses: "All Statuses",
+        status_not_started: "Not Started",
+        status_in_progress: "In Progress",
+        status_completed: "Completed",
+        status_blocked: "Blocked",
+        btn_reset_filters: "Clear Filters",
+        btn_add_task: "New Task",
+        kpi_total: "Total Tasks",
+        kpi_completed: "Completed",
+        kpi_progress: "In Progress",
+        kpi_blocked: "Blocked",
+        chart_donut_title: "Hoshin Kanri Plan Status",
+        chart_donut_progress: "Progress",
+        chart_bars_title: "Tasks per Project (Top 5 by volume)",
+        chart_workload_title: "Workload and Efficiency by Responsible",
+        table_resp: "Responsible",
+        table_total: "Total Tasks",
+        table_comp: "Completed",
+        table_prog: "In Progress",
+        table_block: "Blocked",
+        table_pending: "Not Started",
+        table_pct: "% Compliance",
+        gantt_legend_plan: "Planned (Plan)",
+        gantt_legend_real: "Real (Executed)",
+        gantt_executive_view: "Executive View (Summarize by Project)",
+        gantt_th_project: "Project",
+        gantt_th_responsible: "Responsible",
+        gantt_th_task: "Task",
+        gantt_th_company: "Company",
+        gantt_th_start: "Start Date",
+        gantt_th_duration: "Duration",
+        gantt_th_action: "Action",
+        kanban_col_not_started: "Not Started",
+        kanban_col_in_progress: "In Progress",
+        kanban_col_blocked: "Blocked",
+        kanban_col_completed: "Completed",
+        table_th_project: "Project",
+        table_th_responsible: "Responsible",
+        table_th_task: "Task",
+        table_th_company: "Company",
+        table_th_status: "Status",
+        table_th_action: "Action",
+        modal_title_edit: "Edit Task",
+        modal_title_new: "New Hoshin Task",
+        modal_title_details: "Task Details",
+        modal_label_project: "Project",
+        modal_label_responsible: "Responsible",
+        modal_label_task: "Task",
+        modal_label_company: "Company",
+        modal_label_status: "Status",
+        modal_label_notes: "Notes / Remarks",
+        modal_label_notes_placeholder: "Add details of the current status...",
+        modal_label_planned_weeks: "Planned Weeks",
+        modal_label_weeks_helper: "You can configure weeks directly on the Gantt chart by clicking the corresponding cells.",
+        modal_btn_cancel: "Cancel",
+        modal_btn_save: "Save",
+        modal_btn_delete: "Delete",
+        ctx_plan_activate: "Plan: Activate Week",
+        ctx_plan_deactivate: "Plan: Remove Week",
+        ctx_real_activate: "Real: Activate Week",
+        ctx_real_deactivate: "Real: Remove Week",
+        ctx_edit_task: "Edit Task",
+        ctx_change_status: "Change Status",
+        users_title: "Authorized Access Personnel",
+        users_subtitle: "User <strong>nramirez</strong> always has <strong>Editor</strong> (Admin) permissions. Users listed here will have <strong>Collaborator</strong> permissions. Any other unregistered Windows user will have <strong>Viewer</strong> (Read-only) permissions.",
+        users_th_username: "Windows User",
+        users_th_role: "Assigned Role",
+        users_th_actions: "Actions",
+        users_form_title: "Register Collaborator",
+        users_form_username: "Windows Username",
+        users_form_placeholder: "e.g. jsmith",
+        users_form_btn: "Register Collaborator",
+        login_title: "Access Code (Editor)",
+        login_placeholder: "Enter the code...",
+        login_error: "Incorrect code. Try again.",
+        login_btn_submit: "Enter as Editor",
+        login_or: "or you can also",
+        login_btn_guest: "👁️ Enter as Guest (Read-Only)",
+        login_btn_collab: "👥 Enter as Collaborator (Update Real/Status)",
+        login_btn_cancel: "Cancel",
+        confirm_import: "Are you sure you want to import {count} tasks? This will overwrite the current data.",
+        import_success: "Tasks and configurations successfully imported.",
+        confirm_delete_task: "Are you sure you want to delete this task permanently?",
+        confirm_remove_user: "Are you sure you want to remove collaborator permissions from user \"{user}\"?",
+        error_fields_required: "Please complete the required fields: Project, Responsible, and Task.",
+        error_exceljs: "The Excel library (ExcelJS) is not loaded. Please check your internet connection.",
+        excel_sheet_executive: "Executive Summary",
+        excel_sheet_detailed: "Detailed Gantt Matrix",
+        excel_sheet_tasks: "Task Details",
+        excel_th_weeks: "Planned Weeks",
+        excel_th_notes: "Notes / Remarks",
+        excel_legend_title: "Visual Reference (Gantt Legend):",
+        excel_legend_top: "Top Row (Upper Cell)",
+        excel_legend_top_val: "Planned Weeks (Plan)",
+        excel_legend_bottom: "Bottom Row (Lower Cell)",
+        excel_legend_bottom_val: "Real Executed Weeks according to task status:",
+        excel_duration_weeks: "{count} wks.",
+        excel_project_tasks_count: "[{count} tasks] ",
+        online_users_prefix: "Connected: ",
+        online_users_loading: "Connected: ...",
+        role_label_admin: "Editor",
+        role_label_collaborator: "Collaborator",
+        role_label_viewer: "Viewer",
+        project_card_progress: "Project Progress",
+        project_card_tasks: "{completed}/{total} Tasks ({pct}%)",
+        project_card_desc_placeholder: "Write a description for the project...",
+        project_card_btn_filter: "Filter Gantt",
+        project_card_tasks_count: "[{count} tasks]",
+        badge_tasks_count: "tasks",
+        active_users_label: "Connected: ",
+        admin_permanent_label: "Editor (Permanent)",
+        admin_cannot_delete: "The main Administrator/Editor cannot be deleted",
+        delete_collaborator_tooltip: "Remove Collaborator",
+        excel_project_description: "Project Description",
+        excel_legend_pending: "Not Started / Pending",
+        error_backup_failed: "An error occurred while generating the backup: ",
+        error_username_required: "Please enter a Windows username.",
+        error_admin_permanent: "The user 'nramirez' is the permanent Editor and does not need to be added.",
+        error_user_already_registered: "This user is already registered as a collaborator.",
+        prompt_windows_username: "Please enter your Windows username to identify yourself:",
+        edit_details_tooltip: "Edit Details",
+        btn_fullscreen: "Fullscreen",
+        btn_exit_fullscreen: "Exit Fullscreen",
+        excel_export_error: "Error exporting to Excel: "
+    }
+};
+
+function t(key, replacements = {}) {
+    const lang = currentLanguage || "es";
+    let text = TRANSLATIONS[lang]?.[key] || TRANSLATIONS["es"]?.[key] || key;
+    Object.keys(replacements).forEach(placeholder => {
+        text = text.replace(`{${placeholder}}`, replacements[placeholder]);
+    });
+    return text;
+}
+
+function translateMonth(monthName) {
+    if (currentLanguage === "en") {
+        const monthMap = {
+            "Junio": "June",
+            "Julio": "July",
+            "Agosto": "August",
+            "Septiembre": "September",
+            "Octubre": "October",
+            "Noviembre": "November",
+            "Diciembre": "December",
+            "Enero": "January",
+            "Febrero": "February",
+            "Marzo": "March"
+        };
+        return monthMap[monthName] || monthName;
+    }
+    return monthName;
+}
+
+function updateDOMTranslations() {
+    // 1. Traducir text content simple
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        const translation = t(key);
+        // Verificar si contiene ícono para no pisarlo
+        const icon = el.querySelector("i[data-lucide], svg");
+        if (icon) {
+            el.innerHTML = "";
+            el.appendChild(icon);
+            el.appendChild(document.createTextNode(" " + translation));
+        } else {
+            el.textContent = translation;
+        }
+    });
+
+    // 2. Traducir HTML formateado
+    document.querySelectorAll("[data-i18n-html]").forEach(el => {
+        const key = el.getAttribute("data-i18n-html");
+        el.innerHTML = t(key);
+    });
+
+    // 3. Traducir placeholders de inputs
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+        const key = el.getAttribute("data-i18n-placeholder");
+        el.setAttribute("placeholder", t(key));
+    });
+
+    // 4. Traducir atributos title (tooltips)
+    document.querySelectorAll("[data-i18n-title]").forEach(el => {
+        const key = el.getAttribute("data-i18n-title");
+        el.setAttribute("title", t(key));
+    });
+
+    // 4. Actualizar el indicador del botón de idioma
+    const label = document.getElementById("lang-label");
+    if (label) {
+        label.textContent = currentLanguage === "es" ? "EN" : "ES";
+    }
+}
+
+// Entorno de SharePoint
+let isSharePoint = false;
+let spSiteUrl = "";
+let spFolderRelativeUrl = "";
+
+function initSharePointContext() {
+    isSharePoint = window.location.hostname.endsWith(".sharepoint.com");
+    if (isSharePoint) {
+        const path = window.location.pathname; // e.g. "/sites/DXPlan/Shared%20Documents/DX-Plan/index.html"
+        const decodedPath = decodeURIComponent(path);
+        spFolderRelativeUrl = decodedPath.substring(0, decodedPath.lastIndexOf('/'));
+        
+        // Extraer siteUrl (por ejemplo: /sites/SiteName)
+        const siteUrlMatch = decodedPath.match(/^(\/sites\/[^\/]+)/);
+        spSiteUrl = siteUrlMatch ? siteUrlMatch[1] : '';
+        console.log("Entorno de SharePoint detectado:");
+        console.log("  Site URL:", spSiteUrl);
+        console.log("  Folder Relative URL:", spFolderRelativeUrl);
+    }
+}
+
+// Obtener token X-RequestDigest de SharePoint para peticiones POST
+async function getSpRequestDigest() {
+    const response = await fetch(`${spSiteUrl}/_api/contextinfo`, {
+        method: "POST",
+        headers: { "Accept": "application/json;odata=verbose" }
+    });
+    if (!response.ok) throw new Error("Error al obtener token de SharePoint X-RequestDigest");
+    const data = await response.json();
+    return data.d.GetContextWebInformation.FormDigestValue;
+}
+
+// Leer archivo de la biblioteca de documentos de SharePoint
+async function readSpFile(fileName) {
+    const fileUrl = `${spFolderRelativeUrl}/${fileName}`;
+    const response = await fetch(`${spSiteUrl}/_api/web/GetFileByServerRelativeUrl('${encodeURIComponent(fileUrl)}')/$value`);
+    if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error(`Error al leer archivo ${fileName} de SharePoint: ${response.statusText}`);
+    }
+    return await response.text();
+}
+
+// Escribir/Sobrescribir archivo en la biblioteca de documentos de SharePoint
+async function writeSpFile(fileName, content) {
+    const digest = await getSpRequestDigest();
+    const uploadUrl = `${spSiteUrl}/_api/web/GetFolderByServerRelativeUrl('${encodeURIComponent(spFolderRelativeUrl)}')/Files/add(url='${fileName}',overwrite=true)`;
+    const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: {
+            "X-RequestDigest": digest,
+            "Accept": "application/json;odata=verbose"
+        },
+        body: content
+    });
+    if (!response.ok) {
+        throw new Error(`Error al escribir archivo ${fileName} en SharePoint: ${response.statusText}`);
+    }
+}
+
+// Asegurar existencia de una carpeta en SharePoint (si no existe, se crea)
+async function ensureSpFolder(folderName) {
+    const relativeUrl = `${spFolderRelativeUrl}/${folderName}`;
+    const checkUrl = `${spSiteUrl}/_api/web/GetFolderByServerRelativeUrl('${encodeURIComponent(relativeUrl)}')`;
+    try {
+        const checkResponse = await fetch(checkUrl);
+        if (checkResponse.ok) return;
+        
+        if (checkResponse.status === 404) {
+            const digest = await getSpRequestDigest();
+            const createUrl = `${spSiteUrl}/_api/web/folders`;
+            const response = await fetch(createUrl, {
+                method: "POST",
+                headers: {
+                    "X-RequestDigest": digest,
+                    "Accept": "application/json;odata=verbose",
+                    "Content-Type": "application/json;odata=verbose"
+                },
+                body: JSON.stringify({
+                    "__metadata": { "type": "SP.Folder" },
+                    "ServerRelativeUrl": relativeUrl
+                })
+            });
+            if (!response.ok) throw new Error("Error creando carpeta en SharePoint");
+            console.log(`Carpeta creada con éxito: ${folderName}`);
+        }
+    } catch (e) {
+        console.warn(`Error al verificar/crear la carpeta ${folderName} en SharePoint:`, e);
+    }
+}
+
+// Listar archivos dentro de una carpeta de SharePoint (para presencia de usuarios)
+async function listSpFolderFiles(folderName) {
+    const relativeUrl = `${spFolderRelativeUrl}/${folderName}`;
+    const url = `${spSiteUrl}/_api/web/GetFolderByServerRelativeUrl('${encodeURIComponent(relativeUrl)}')/Files?$select=Name,TimeLastModified`;
+    const response = await fetch(url, {
+        headers: { "Accept": "application/json;odata=verbose" }
+    });
+    if (!response.ok) {
+        if (response.status === 404) return [];
+        throw new Error(`Error al listar archivos de la carpeta ${folderName} en SharePoint`);
+    }
+    const data = await response.json();
+    return data.d.results || [];
+}
 let filters = {
     search: "",
     proyecto: "",
@@ -61,6 +546,9 @@ const thinBorder = {
 };
 
 function translateStatus(status) {
+    if (currentLanguage === "en") {
+        return status;
+    }
     const map = {
         "Completed": "Completado",
         "In Progress": "En Progreso",
@@ -148,11 +636,273 @@ function getProjectUnionSchedule(projectTasks) {
     return unionList;
 }
 
+// Cargar y guardar colaboradores autorizados en localStorage
+function loadCollaborators() {
+    const saved = localStorage.getItem("hoshin_collaborators");
+    if (saved) {
+        try {
+            collaboratorsList = JSON.parse(saved);
+            if (!Array.isArray(collaboratorsList)) {
+                collaboratorsList = [];
+            }
+        } catch (e) {
+            collaboratorsList = [];
+        }
+    } else {
+        collaboratorsList = [];
+    }
+}
+
+function saveCollaborators() {
+    localStorage.setItem("hoshin_collaborators", JSON.stringify(collaboratorsList));
+    if (isSharePoint) {
+        writeSpFile("hoshin_collaborators.json", JSON.stringify(collaboratorsList, null, 2))
+            .catch(e => console.error("Error guardando colaboradores en SharePoint:", e));
+    }
+}
+
+// Detectar el usuario de Windows a través del API local o SharePoint
+async function detectWindowsUser() {
+    if (isSharePoint) {
+        try {
+            const response = await fetch(`${spSiteUrl}/_api/web/currentUser`, {
+                headers: { "Accept": "application/json;odata=verbose" }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.d) {
+                    let rawUser = data.d.Title || "";
+                    if (data.d.Email) {
+                        rawUser = data.d.Email.split('@')[0];
+                    } else if (data.d.LoginName) {
+                        const loginParts = data.d.LoginName.split('|');
+                        const account = loginParts[loginParts.length - 1];
+                        if (account.includes('@')) {
+                            rawUser = account.split('@')[0];
+                        } else if (account.includes('\\')) {
+                            rawUser = account.split('\\')[1];
+                        } else {
+                            rawUser = account;
+                        }
+                    }
+                    windowsUsername = rawUser.trim();
+                    console.log("Usuario de SharePoint detectado:", windowsUsername);
+                }
+            }
+        } catch (err) {
+            console.warn("No se pudo detectar el usuario de SharePoint:", err);
+        }
+    } else {
+        try {
+            const response = await fetch("/api/user");
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.username) {
+                    windowsUsername = data.username.trim();
+                    console.log("Usuario de Windows detectado:", windowsUsername);
+                }
+            }
+        } catch (err) {
+            console.warn("No se pudo detectar el usuario de Windows (API inalcanzable). Fallback a selección manual.", err);
+        }
+    }
+
+    // Si no se detectó (por ser remoto o API inaccesible), buscar en localStorage o solicitar
+    if (!windowsUsername) {
+        let savedUser = localStorage.getItem("hoshin_windows_username");
+        if (!savedUser) {
+            savedUser = prompt(t('prompt_windows_username'));
+            if (savedUser) {
+                savedUser = savedUser.trim();
+                localStorage.setItem("hoshin_windows_username", savedUser);
+            } else {
+                // Generar un nombre de invitado único si cancela
+                savedUser = "invitado_" + Math.floor(Math.random() * 1000);
+            }
+        }
+        windowsUsername = savedUser;
+    }
+
+    // Determinar el rol automáticamente basado en el usuario resuelto
+    if (windowsUsername.toLowerCase() === "nramirez") {
+        currentUserRole = "admin";
+    } else if (collaboratorsList.some(c => c.toLowerCase() === windowsUsername.toLowerCase())) {
+        currentUserRole = "collaborator";
+    } else {
+        currentUserRole = "viewer";
+    }
+
+    // Guardar el rol en localStorage
+    localStorage.setItem("hoshin_user_role", currentUserRole);
+}
+
+// Enviar señales de vida (heartbeat) y actualizar lista de usuarios conectados en simultáneo
+let activeUsers = [];
+
+async function sendHeartbeat() {
+    if (!windowsUsername) return;
+
+    if (isSharePoint) {
+        try {
+            // 1. Reportar presencia escribiendo un archivo temporal vacío
+            await writeSpFile(`active_users/${windowsUsername}.json`, "active");
+            
+            // 2. Listar archivos de presencia en SharePoint
+            const files = await listSpFolderFiles("active_users");
+            const now = new Date();
+            const activeList = [];
+            
+            files.forEach(file => {
+                const lastModified = new Date(file.TimeLastModified);
+                const diffSeconds = (now.getTime() - lastModified.getTime()) / 1000;
+                
+                // Tolerancia de 60 segundos por posibles desvíos de reloj entre cliente y SharePoint
+                if (diffSeconds < 60 && diffSeconds > -60) {
+                    const username = file.Name.replace(".json", "");
+                    if (!activeList.includes(username)) {
+                        activeList.push(username);
+                    }
+                }
+            });
+            activeUsers = activeList;
+            renderActiveUsers();
+        } catch (err) {
+            console.warn("Error en la presencia de SharePoint:", err);
+        }
+    } else {
+        try {
+            const response = await fetch(`/api/heartbeat?username=${encodeURIComponent(windowsUsername)}`);
+            if (response.ok) {
+                activeUsers = await response.json();
+                renderActiveUsers();
+            }
+        } catch (err) {
+            console.warn("Error al enviar heartbeat o recuperar usuarios en línea:", err);
+        }
+    }
+}
+
+function renderActiveUsers() {
+    const container = document.getElementById("active-users-container");
+    const listSpan = document.getElementById("active-users-list");
+
+    if (container && listSpan) {
+        if (activeUsers && activeUsers.length > 0) {
+            container.style.display = "inline-flex";
+            listSpan.textContent = t('active_users_label') + activeUsers.join(", ");
+        } else {
+            container.style.display = "none";
+        }
+    }
+}
+
+function startHeartbeat() {
+    sendHeartbeat();
+    // Enviar cada 5 segundos para que la lista de activos sea muy reactiva
+    setInterval(sendHeartbeat, 5000);
+}
+
+// Sincronización en segundo plano de archivos en SharePoint
+let lastTasksJson = "";
+let lastMetadataJson = "";
+
+async function syncFromSharePoint() {
+    if (!isSharePoint) return;
+    
+    try {
+        // 1. Leer tareas
+        const tasksContent = await readSpFile("hoshin_tasks.json");
+        if (tasksContent) {
+            if (tasksContent !== lastTasksJson) {
+                lastTasksJson = tasksContent;
+                const parsed = JSON.parse(tasksContent);
+                if (Array.isArray(parsed)) {
+                    tasks = parsed;
+                    localStorage.setItem("hoshin_tasks", tasksContent);
+                    console.log("Tareas sincronizadas desde SharePoint.");
+                }
+            }
+        } else {
+            console.log("Creando hoshin_tasks.json inicial en SharePoint...");
+            const initialTasks = typeof BASE_DATA !== 'undefined' ? BASE_DATA : [];
+            const initialJson = JSON.stringify(initialTasks, null, 2);
+            await writeSpFile("hoshin_tasks.json", initialJson);
+            lastTasksJson = initialJson;
+            tasks = JSON.parse(JSON.stringify(initialTasks));
+            localStorage.setItem("hoshin_tasks", initialJson);
+        }
+
+        // 2. Leer metadata de proyectos
+        const metadataContent = await readSpFile("hoshin_metadata.json");
+        if (metadataContent) {
+            if (metadataContent !== lastMetadataJson) {
+                lastMetadataJson = metadataContent;
+                const parsed = JSON.parse(metadataContent);
+                if (parsed && typeof parsed === 'object') {
+                    projectsMetadata = parsed;
+                    localStorage.setItem("hoshin_projects_metadata", metadataContent);
+                    console.log("Metadata de proyectos sincronizada desde SharePoint.");
+                }
+            }
+        } else {
+            console.log("Creando hoshin_metadata.json inicial en SharePoint...");
+            const initialMetadata = {};
+            const initialJson = JSON.stringify(initialMetadata, null, 2);
+            await writeSpFile("hoshin_metadata.json", initialJson);
+            lastMetadataJson = initialJson;
+            projectsMetadata = initialMetadata;
+            localStorage.setItem("hoshin_projects_metadata", initialJson);
+        }
+        
+        // 3. Leer colaboradores
+        const collaboratorsContent = await readSpFile("hoshin_collaborators.json");
+        if (collaboratorsContent) {
+            const parsed = JSON.parse(collaboratorsContent);
+            if (Array.isArray(parsed)) {
+                collaboratorsList = parsed;
+                localStorage.setItem("hoshin_collaborators", collaboratorsContent);
+            }
+        } else {
+            console.log("Creando hoshin_collaborators.json inicial en SharePoint...");
+            await writeSpFile("hoshin_collaborators.json", JSON.stringify([], null, 2));
+            collaboratorsList = [];
+            localStorage.setItem("hoshin_collaborators", JSON.stringify([]));
+        }
+        
+    } catch (err) {
+        console.error("Error en la sincronización con SharePoint:", err);
+    }
+}
+
 // Cargar estado inicial
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    initSharePointContext();
+    if (isSharePoint) {
+        await syncFromSharePoint();
+        await ensureSpFolder("active_users");
+    } else {
+        loadCollaborators();
+    }
+
+    await detectWindowsUser();
     initApp();
     setupEventListeners();
     safeCreateIcons();
+    startHeartbeat(); // Iniciar envío de heartbeats
+    
+    // Polling de sincronización cada 10 segundos en SharePoint
+    if (isSharePoint) {
+        setInterval(async () => {
+            const oldTasks = JSON.stringify(tasks);
+            const oldMetadata = JSON.stringify(projectsMetadata);
+            await syncFromSharePoint();
+            if (JSON.stringify(tasks) !== oldTasks || JSON.stringify(projectsMetadata) !== oldMetadata) {
+                console.log("Cambios externos detectados en SharePoint. Re-renderizando vista.");
+                populateFilterDropdowns();
+                renderCurrentView();
+            }
+        }, 10000);
+    }
 });
 
 // Función para migrar los planes guardados de 4 semanas a la distribución de semanas reales del calendario (coherente)
@@ -379,6 +1129,9 @@ function initApp() {
     // Rellenar filtros select dinámicos
     populateFilterDropdowns();
     
+    // Aplicar traducciones estáticas del DOM
+    updateDOMTranslations();
+    
     // Renderizar la vista por defecto
     renderCurrentView();
     updateThemeIcon();
@@ -399,6 +1152,10 @@ function loadBaselineData() {
 // Guardar datos en localStorage
 function saveToLocalStorage() {
     localStorage.setItem("hoshin_tasks", JSON.stringify(tasks));
+    if (isSharePoint) {
+        writeSpFile("hoshin_tasks.json", JSON.stringify(tasks, null, 2))
+            .catch(e => console.error("Error guardando tareas en SharePoint:", e));
+    }
 }
 
 // Rellenar dropdowns de filtros basados en los datos de las tareas
@@ -410,8 +1167,8 @@ function populateFilterDropdowns() {
     const filterResponsable = document.getElementById("filter-responsable");
     
     // Limpiar excepto el primero
-    filterProyecto.innerHTML = '<option value="">Todos los Proyectos</option>';
-    filterResponsable.innerHTML = '<option value="">Todos los Responsables</option>';
+    filterProyecto.innerHTML = `<option value="">${t('all_projects')}</option>`;
+    filterResponsable.innerHTML = `<option value="">${t('all_responsibles')}</option>`;
     
     proyectos.forEach(p => {
         if (p) {
@@ -492,10 +1249,37 @@ function setupEventListeners() {
         updateThemeIcon();
     });
 
+    // Pantalla Completa / Fullscreen
+    const btnFullscreen = document.getElementById("btn-fullscreen");
+    if (btnFullscreen) {
+        btnFullscreen.addEventListener("click", toggleFullscreen);
+    }
+
+    document.addEventListener("fullscreenchange", () => {
+        const isActive = !!document.fullscreenElement;
+        if (isActive) {
+            document.body.classList.add("fullscreen-active");
+            updateFullscreenIcon(true);
+        } else {
+            document.body.classList.remove("fullscreen-active");
+            updateFullscreenIcon(false);
+        }
+    });
+
+    // Alternar Idioma Español/Inglés
+    document.getElementById("btn-lang-toggle").addEventListener("click", () => {
+        currentLanguage = currentLanguage === "es" ? "en" : "es";
+        localStorage.setItem("hoshin_lang", currentLanguage);
+        updateDOMTranslations();
+        populateFilterDropdowns();
+        renderCurrentView();
+    });
+
     // Impresión
     document.getElementById("btn-print").addEventListener("click", () => {
         // Formatear datos de impresión en el header antes de abrir el diálogo
-        document.getElementById("print-date").textContent = new Date().toLocaleDateString('es-ES', {
+        const locale = currentLanguage === "en" ? "en-US" : "es-ES";
+        document.getElementById("print-date").textContent = new Date().toLocaleDateString(locale, {
             year: 'numeric', month: 'long', day: 'numeric'
         });
         
@@ -510,7 +1294,7 @@ function setupEventListeners() {
     document.getElementById("btn-export").addEventListener("click", () => {
         try {
             if (typeof ExcelJS === 'undefined') {
-                alert("La biblioteca de Excel (ExcelJS) no está cargada. Revisa tu conexión a internet.");
+                alert(t('error_exceljs'));
                 return;
             }
             
@@ -520,31 +1304,31 @@ function setupEventListeners() {
 
 
             // Hoja 1: Resumen Ejecutivo
-            const wsResumen = workbook.addWorksheet('Resumen Ejecutivo', {
+            const wsResumen = workbook.addWorksheet(t('excel_sheet_executive'), {
                 views: [{ showGridLines: true }]
             });
             populateGanttWorksheet(wsResumen, true);
 
             // Hoja 2: Matriz Gantt Detallada
-            const wsDetallada = workbook.addWorksheet('Matriz Gantt Detallada', {
+            const wsDetallada = workbook.addWorksheet(t('excel_sheet_detailed'), {
                 views: [{ showGridLines: true }]
             });
             populateGanttWorksheet(wsDetallada, false);
 
             // Hoja 3: Detalle de Tareas
-            const wsTareas = workbook.addWorksheet('Detalle de Tareas', {
+            const wsTareas = workbook.addWorksheet(t('excel_sheet_tasks'), {
                 views: [{ showGridLines: true }]
             });
             
             wsTareas.columns = [
                 { header: 'ID', key: 'id', width: 6 },
-                { header: 'Proyecto', key: 'proyecto', width: 16 },
-                { header: 'Responsable', key: 'responsable', width: 16 },
-                { header: 'Tarea', key: 'tarea', width: 50 },
-                { header: 'Compañía', key: 'compania', width: 12 },
-                { header: 'Estado', key: 'status', width: 15 },
-                { header: 'Semanas Planificadas', key: 'weeks', width: 30 },
-                { header: 'Notas / Observaciones', key: 'notes', width: 40 }
+                { header: t('gantt_th_project'), key: 'proyecto', width: 16 },
+                { header: t('gantt_th_responsible'), key: 'responsable', width: 16 },
+                { header: t('gantt_th_task'), key: 'tarea', width: 50 },
+                { header: t('gantt_th_company'), key: 'compania', width: 12 },
+                { header: t('table_th_status'), key: 'status', width: 15 },
+                { header: t('excel_th_weeks'), key: 'weeks', width: 30 },
+                { header: t('excel_th_notes'), key: 'notes', width: 40 }
             ];
             
             wsTareas.getRow(1).height = 24;
@@ -611,7 +1395,7 @@ function setupEventListeners() {
             
         } catch (error) {
             console.error("Error al exportar a Excel:", error);
-            alert("Ocurrió un error al generar el archivo Excel: " + error.message);
+            alert(t('excel_export_error') + error.message);
         }
     });
 
@@ -637,11 +1421,11 @@ function setupEventListeners() {
                     newTasks = imported.tasks;
                     newMetadata = imported.projectsMetadata;
                 } else {
-                    alert("El archivo JSON no tiene un formato válido.");
+                    alert(t('error_json_invalid'));
                     return;
                 }
 
-                if (confirm(`¿Estás seguro de importar ${newTasks.length} tareas? Esto sobrescribirá los datos actuales.`)) {
+                if (confirm(t('confirm_import', { count: newTasks.length }))) {
                     tasks = newTasks;
                     saveToLocalStorage();
                     
@@ -653,10 +1437,10 @@ function setupEventListeners() {
                     }
                     
                     initApp();
-                    alert("Tareas y configuraciones importadas con éxito.");
+                    alert(t('import_success'));
                 }
             } catch (err) {
-                alert("Error al leer el archivo JSON: " + err.message);
+                alert(t('error_json_read') + err.message);
             }
         };
         reader.readAsText(file);
@@ -680,7 +1464,7 @@ function setupEventListeners() {
                 downloadAnchor.remove();
             } catch (err) {
                 console.error("Error al exportar JSON:", err);
-                alert("Ocurrió un error al generar la copia de seguridad: " + err.message);
+                alert(t('error_backup_failed') + err.message);
             }
         });
     }
@@ -839,6 +1623,39 @@ function setupEventListeners() {
             document.getElementById("gantt-context-menu").style.display = "none";
         });
     });
+
+    // ABM Usuarios - Registrar Colaborador
+    const btnAddCollab = document.getElementById("btn-add-collab");
+    if (btnAddCollab) {
+        btnAddCollab.addEventListener("click", () => {
+            const usernameInput = document.getElementById("new-collab-username");
+            const username = usernameInput.value.trim();
+            if (!username) {
+                alert(t('error_username_required'));
+                return;
+            }
+            if (username.toLowerCase() === "nramirez") {
+                alert(t('error_admin_permanent'));
+                return;
+            }
+            if (collaboratorsList.some(c => c.toLowerCase() === username.toLowerCase())) {
+                alert(t('error_user_already_registered'));
+                return;
+            }
+            
+            collaboratorsList.push(username);
+            saveCollaborators();
+            usernameInput.value = "";
+            renderUsers();
+            
+            // Si agregamos al usuario actual, actualizamos su rol dinámicamente
+            if (windowsUsername && windowsUsername.toLowerCase() === username.toLowerCase()) {
+                currentUserRole = "collaborator";
+                localStorage.setItem("hoshin_user_role", currentUserRole);
+                renderCurrentView();
+            }
+        });
+    }
 }
 
 // Cambiar ícono de tema
@@ -849,6 +1666,37 @@ function updateThemeIcon() {
         btn.innerHTML = '<i data-lucide="sun"></i>';
     } else {
         btn.innerHTML = '<i data-lucide="moon"></i>';
+    }
+    safeCreateIcons();
+}
+
+// Alternar Pantalla Completa
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.warn("Fullscreen request blocked/unsupported; forcing CSS fallback.", err);
+            document.body.classList.toggle("fullscreen-active");
+            const isFallbackActive = document.body.classList.contains("fullscreen-active");
+            updateFullscreenIcon(isFallbackActive);
+        });
+    } else {
+        document.exitFullscreen().catch(err => {
+            console.warn("Error exiting native fullscreen:", err);
+        });
+    }
+}
+
+function updateFullscreenIcon(active) {
+    const btn = document.getElementById("btn-fullscreen");
+    if (!btn) return;
+    if (active) {
+        btn.innerHTML = '<i data-lucide="minimize-2"></i>';
+        btn.setAttribute("title", t('btn_exit_fullscreen'));
+        btn.setAttribute("data-i18n-title", "btn_exit_fullscreen");
+    } else {
+        btn.innerHTML = '<i data-lucide="maximize-2"></i>';
+        btn.setAttribute("title", t('btn_fullscreen'));
+        btn.setAttribute("data-i18n-title", "btn_fullscreen");
     }
     safeCreateIcons();
 }
@@ -871,6 +1719,7 @@ function getFilteredTasks() {
 }
 
 function applyRolePermissions() {
+    const isAdmin = (currentUserRole === "admin");
     const isReadOnlyOrCollab = (currentUserRole === "viewer" || currentUserRole === "collaborator");
     
     const btnAddTask = document.getElementById("btn-add-task");
@@ -880,6 +1729,50 @@ function applyRolePermissions() {
     const btnImport = document.getElementById("btn-import-trigger");
     if (btnImport) {
         btnImport.style.display = isReadOnlyOrCollab ? "none" : "inline-flex";
+    }
+
+    // Mostrar/ocultar pestaña de administración de usuarios
+    const tabUsers = document.getElementById("tab-users");
+    if (tabUsers) {
+        tabUsers.style.display = isAdmin ? "inline-flex" : "none";
+    }
+
+    // Renderizar insignia de usuario activo
+    const badgeContainer = document.getElementById("user-badge-container");
+    const roleSelector = document.getElementById("role-selector");
+    
+    if (badgeContainer) {
+        if (windowsUsername) {
+            badgeContainer.style.display = "inline-flex";
+            if (roleSelector) roleSelector.style.display = "none";
+            
+            let roleName = t('role_label_viewer');
+            let roleClass = "role-viewer";
+            let iconName = "eye";
+            
+            if (currentUserRole === "admin") {
+                roleName = t('role_label_admin');
+                roleClass = "role-admin";
+                iconName = "shield";
+            } else if (currentUserRole === "collaborator") {
+                roleName = t('role_label_collaborator');
+                roleClass = "role-collaborator";
+                iconName = "users";
+            }
+            
+            badgeContainer.innerHTML = `
+                <div class="user-badge ${roleClass}" title="${currentLanguage === 'en' ? 'Windows user detected' : 'Usuario de Windows detectado'}">
+                    <i data-lucide="${iconName}"></i>
+                    <span>${windowsUsername} (${roleName})</span>
+                </div>
+            `;
+        } else {
+            badgeContainer.style.display = "none";
+            if (roleSelector) {
+                roleSelector.style.display = "inline-flex";
+                roleSelector.value = currentUserRole;
+            }
+        }
     }
 }
 
@@ -908,6 +1801,8 @@ function renderCurrentView() {
         renderTable();
     } else if (currentView === "projects") {
         renderProjects();
+    } else if (currentView === "users") {
+        renderUsers();
     }
     
     safeCreateIcons();
@@ -983,19 +1878,19 @@ function renderDonutChart(stats) {
     legend.innerHTML = `
         <div class="legend-item">
             <span class="legend-dot" style="background-color: #10b981;"></span>
-            <span>Completado: <strong>${stats.completed}</strong> (${completedPct}%)</span>
+            <span>${t('status_completed')}: <strong>${stats.completed}</strong> (${completedPct}%)</span>
         </div>
         <div class="legend-item">
             <span class="legend-dot" style="background-color: #f59e0b;"></span>
-            <span>En Progreso: <strong>${stats.progress}</strong> (${progressPct}%)</span>
+            <span>${t('status_in_progress')}: <strong>${stats.progress}</strong> (${progressPct}%)</span>
         </div>
         <div class="legend-item">
             <span class="legend-dot" style="background-color: #ef4444;"></span>
-            <span>Bloqueado: <strong>${stats.blocked}</strong> (${blockedPct}%)</span>
+            <span>${t('status_blocked')}: <strong>${stats.blocked}</strong> (${blockedPct}%)</span>
         </div>
         <div class="legend-item">
             <span class="legend-dot" style="background-color: #64748b;"></span>
-            <span>No Iniciado: <strong>${stats.pending}</strong> (${pendingPct}%)</span>
+            <span>${t('status_not_started')}: <strong>${stats.pending}</strong> (${pendingPct}%)</span>
         </div>
     `;
 }
@@ -1034,7 +1929,7 @@ function renderProjectWorkloadChart() {
         barItem.innerHTML = `
             <div class="bar-header">
                 <span class="bar-label">${p.name}</span>
-                <span class="bar-value">${p.completed}/${p.total} Completadas (${p.pct}%)</span>
+                <span class="bar-value">${p.completed}/${p.total} ${t('status_completed')} (${p.pct}%)</span>
             </div>
             <div class="bar-outer">
                 <div class="bar-inner" style="width: ${p.pct}%; background-color: ${p.pct === 100 ? '#10b981' : 'hsl(var(--primary))'}"></div>
@@ -1101,13 +1996,13 @@ function renderResponsibleStatsTable() {
                 }
                 
                 // 2. Escribir valores de cabeceras estáticas
-                worksheet.getCell('A1').value = "Proyecto";
-                worksheet.getCell('B1').value = "Responsable";
-                worksheet.getCell('C1').value = isSummary ? "Descripción del Proyecto" : "Tarea";
-                worksheet.getCell('D1').value = "Compañía";
-                worksheet.getCell('E1').value = "F. Inicio";
-                worksheet.getCell('F1').value = "Duración";
-                worksheet.getCell('G1').value = "Estado";
+                worksheet.getCell('A1').value = t('gantt_th_project');
+                worksheet.getCell('B1').value = t('gantt_th_responsible');
+                worksheet.getCell('C1').value = isSummary ? t('excel_project_description') : t('gantt_th_task');
+                worksheet.getCell('D1').value = t('gantt_th_company');
+                worksheet.getCell('E1').value = t('gantt_th_start');
+                worksheet.getCell('F1').value = t('gantt_th_duration');
+                worksheet.getCell('G1').value = t('table_th_status');
                 
                 // Combinar verticalmente las cabeceras estáticas
                 worksheet.mergeCells('A1:A2');
@@ -1126,7 +2021,7 @@ function renderResponsibleStatsTable() {
                     
                     // Mes
                     const cell = worksheet.getCell(1, startCol);
-                    cell.value = m.name;
+                    cell.value = translateMonth(m.name);
                     worksheet.mergeCells(1, startCol, 1, endCol);
                     
                     // Semanas
@@ -1183,19 +2078,19 @@ function renderResponsibleStatsTable() {
                     uniqueProjectsInTasks.forEach(projName => {
                         const projectTasks = tasks.filter(t => t.proyecto === projName);
                         const status = projectsMetadata[projName]?.status || "In Progress";
-                        const desc = projectsMetadata[projName]?.description || `Proyecto ${projName}`;
+                        const desc = projectsMetadata[projName]?.description || (currentLanguage === "en" ? `Project ${projName}` : `Proyecto ${projName}`);
                         
                         const uniqueResps = [...new Set(projectTasks.map(t => t.responsable))].sort().join(", ");
                         const uniqueComps = [...new Set(projectTasks.map(t => t.compania))].sort().join(", ");
                         
                         const unionSchedule = getProjectUnionSchedule(projectTasks);
                         const timing = getGanttRowTiming(unionSchedule);
-                        const durationText = timing.durationWeeks > 0 ? `${timing.durationWeeks} sem.` : "-";
+                        const durationText = timing.durationWeeks > 0 ? t('excel_duration_weeks', { count: timing.durationWeeks }) : "-";
                         
                         // Set values on top row of the pair (rowNum)
                         worksheet.getCell(rowNum, 1).value = projName;
                         worksheet.getCell(rowNum, 2).value = uniqueResps;
-                        worksheet.getCell(rowNum, 3).value = desc;
+                        worksheet.getCell(rowNum, 3).value = t('excel_project_tasks_count', { count: projectTasks.length }) + desc;
                         worksheet.getCell(rowNum, 4).value = uniqueComps;
                         worksheet.getCell(rowNum, 5).value = timing.startDate;
                         worksheet.getCell(rowNum, 6).value = durationText;
@@ -1224,35 +2119,37 @@ function renderResponsibleStatsTable() {
                             }
                         }
                         
-                        // Style the top cells (rowNum)
+                        // Style all cells in the merged block (rowNum and rowNum + 1)
                         for (let c = 1; c <= 7; c++) {
-                            const cell = worksheet.getCell(rowNum, c);
-                            cell.font = JSON.parse(JSON.stringify(rowStyles[c - 1].font));
-                            cell.alignment = { ...rowStyles[c - 1].alignment, vertical: 'middle' };
-                            
-                            if (c === 4) { // Compañía badge
-                                if (uniqueComps === "SAR") {
-                                    cell.font.color = { argb: 'FF2563EB' };
-                                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF5FF' } };
-                                } else if (uniqueComps === "TBAR") {
-                                    cell.font.color = { argb: 'FFD97706' };
-                                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF2E9' } };
-                                } else {
-                                    cell.font.color = { argb: 'FF7E22CE' };
-                                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+                            for (let r = rowNum; r <= rowNum + 1; r++) {
+                                const cell = worksheet.getCell(r, c);
+                                cell.font = JSON.parse(JSON.stringify(rowStyles[c - 1].font));
+                                cell.alignment = { ...rowStyles[c - 1].alignment, vertical: 'middle' };
+                                
+                                if (c === 4) { // Compañía badge
+                                    if (uniqueComps === "SAR") {
+                                        cell.font.color = { argb: 'FF2563EB' };
+                                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF5FF' } };
+                                    } else if (uniqueComps === "TBAR") {
+                                        cell.font.color = { argb: 'FFD97706' };
+                                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF2E9' } };
+                                    } else {
+                                        cell.font.color = { argb: 'FF7E22CE' };
+                                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+                                    }
                                 }
-                            }
-                            
-                            if (c === 7) { // Estado badge
-                                const statusStyles = {
-                                    "Completed": { fg: 'FFD1FAE5', text: 'FF065F46' },
-                                    "In Progress": { fg: 'FFFEF3C7', text: 'FF92400E' },
-                                    "Blocked": { fg: 'FFFEE2E2', text: 'FF991B1B' },
-                                    "Not Started": { fg: 'FFF1F5F9', text: 'FF475569' }
-                                };
-                                const style = statusStyles[status] || statusStyles["In Progress"];
-                                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: style.fg } };
-                                cell.font.color = { argb: style.text };
+                                
+                                if (c === 7) { // Estado badge
+                                    const statusStyles = {
+                                        "Completed": { fg: 'FFD1FAE5', text: 'FF065F46' },
+                                        "In Progress": { fg: 'FFFEF3C7', text: 'FF92400E' },
+                                        "Blocked": { fg: 'FFFEE2E2', text: 'FF991B1B' },
+                                        "Not Started": { fg: 'FFF1F5F9', text: 'FF475569' }
+                                    };
+                                    const style = statusStyles[status] || statusStyles["In Progress"];
+                                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: style.fg } };
+                                    cell.font.color = { argb: style.text };
+                                }
                             }
                         }
                         
@@ -1295,7 +2192,7 @@ function renderResponsibleStatsTable() {
                 } else {
                     tasks.forEach(task => {
                         const timing = getGanttRowTiming(task.schedule && task.schedule.length > 0 ? task.schedule : task.realSchedule);
-                        const durationText = timing.durationWeeks > 0 ? `${timing.durationWeeks} sem.` : "-";
+                        const durationText = timing.durationWeeks > 0 ? t('excel_duration_weeks', { count: timing.durationWeeks }) : "-";
                         
                         worksheet.getCell(rowNum, 1).value = task.proyecto;
                         worksheet.getCell(rowNum, 2).value = task.responsable;
@@ -1328,35 +2225,37 @@ function renderResponsibleStatsTable() {
                             }
                         }
                         
-                        // Style the top cells (rowNum)
+                        // Style all cells in the merged block (rowNum and rowNum + 1)
                         for (let c = 1; c <= 7; c++) {
-                            const cell = worksheet.getCell(rowNum, c);
-                            cell.font = JSON.parse(JSON.stringify(rowStyles[c - 1].font));
-                            cell.alignment = { ...rowStyles[c - 1].alignment, vertical: 'middle' };
-                            
-                            if (c === 4) { // Compañía badge
-                                if (task.compania === "SAR") {
-                                    cell.font.color = { argb: 'FF2563EB' };
-                                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF5FF' } };
-                                } else if (task.compania === "TBAR") {
-                                    cell.font.color = { argb: 'FFD97706' };
-                                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF2E9' } };
-                                } else if (task.compania === "TBAR/SAR") {
-                                    cell.font.color = { argb: 'FF7E22CE' };
-                                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+                            for (let r = rowNum; r <= rowNum + 1; r++) {
+                                const cell = worksheet.getCell(r, c);
+                                cell.font = JSON.parse(JSON.stringify(rowStyles[c - 1].font));
+                                cell.alignment = { ...rowStyles[c - 1].alignment, vertical: 'middle' };
+                                
+                                if (c === 4) { // Compañía badge
+                                    if (task.compania === "SAR") {
+                                        cell.font.color = { argb: 'FF2563EB' };
+                                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF5FF' } };
+                                    } else if (task.compania === "TBAR") {
+                                        cell.font.color = { argb: 'FFD97706' };
+                                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF2E9' } };
+                                    } else if (task.compania === "TBAR/SAR") {
+                                        cell.font.color = { argb: 'FF7E22CE' };
+                                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+                                    }
                                 }
-                            }
-                            
-                            if (c === 7) { // Estado badge
-                                const statusStyles = {
-                                    "Completed": { fg: 'FFD1FAE5', text: 'FF065F46' },
-                                    "In Progress": { fg: 'FFFEF3C7', text: 'FF92400E' },
-                                    "Blocked": { fg: 'FFFEE2E2', text: 'FF991B1B' },
-                                    "Not Started": { fg: 'FFF1F5F9', text: 'FF475569' }
-                                };
-                                const style = statusStyles[task.status] || statusStyles["Not Started"];
-                                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: style.fg } };
-                                cell.font.color = { argb: style.text };
+                                
+                                if (c === 7) { // Estado badge
+                                    const statusStyles = {
+                                        "Completed": { fg: 'FFD1FAE5', text: 'FF065F46' },
+                                        "In Progress": { fg: 'FFFEF3C7', text: 'FF92400E' },
+                                        "Blocked": { fg: 'FFFEE2E2', text: 'FF991B1B' },
+                                        "Not Started": { fg: 'FFF1F5F9', text: 'FF475569' }
+                                    };
+                                    const style = statusStyles[task.status] || statusStyles["Not Started"];
+                                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: style.fg } };
+                                    cell.font.color = { argb: style.text };
+                                }
                             }
                         }
                         
@@ -1400,44 +2299,67 @@ function renderResponsibleStatsTable() {
 
                 // Add visual Legend at the bottom of the worksheet
                 rowNum += 2;
-                worksheet.getCell(rowNum, 1).value = "Referencia Visual (Leyenda Gantt):";
+                worksheet.getCell(rowNum, 1).value = t('excel_legend_title');
                 worksheet.getCell(rowNum, 1).font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF1E293B' } };
                 
+                // Row for Plan
                 rowNum++;
-                worksheet.getCell(rowNum, 1).value = "Fila Superior (Celda de Arriba)";
-                worksheet.getCell(rowNum, 2).value = "Semanas Planificadas (Plan)";
-                worksheet.getCell(rowNum, 2).font = { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FF1E3A8A' } };
-                worksheet.getCell(rowNum, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
-                worksheet.getCell(rowNum, 2).border = thinBorder;
+                worksheet.getCell(rowNum, 1).value = t('excel_legend_top');
+                worksheet.getCell(rowNum, 1).font = { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FF475569' } };
                 
-                rowNum++;
-                worksheet.getCell(rowNum, 1).value = "Fila Inferior (Celda de Abajo)";
-                worksheet.getCell(rowNum, 2).value = "Semanas Ejecutadas (Real) según estado de la tarea:";
-                worksheet.getCell(rowNum, 2).font = { name: 'Segoe UI', size: 9 };
+                const planIndicator = worksheet.getCell(rowNum, 2);
+                planIndicator.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+                planIndicator.border = thinBorder;
                 
-                rowNum++;
-                worksheet.getCell(rowNum, 2).value = "Completado";
-                worksheet.getCell(rowNum, 2).font = { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FF065F46' } };
-                worksheet.getCell(rowNum, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
-                worksheet.getCell(rowNum, 2).border = thinBorder;
+                worksheet.getCell(rowNum, 3).value = t('excel_legend_top_val');
+                worksheet.getCell(rowNum, 3).font = { name: 'Segoe UI', size: 9, color: { argb: 'FF334155' } };
                 
+                // Row for Real descriptive header
                 rowNum++;
-                worksheet.getCell(rowNum, 2).value = "En Progreso";
-                worksheet.getCell(rowNum, 2).font = { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FF92400E' } };
-                worksheet.getCell(rowNum, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };
-                worksheet.getCell(rowNum, 2).border = thinBorder;
+                worksheet.getCell(rowNum, 1).value = t('excel_legend_bottom');
+                worksheet.getCell(rowNum, 1).font = { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FF475569' } };
                 
-                rowNum++;
-                worksheet.getCell(rowNum, 2).value = "Bloqueado";
-                worksheet.getCell(rowNum, 2).font = { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FF991B1B' } };
-                worksheet.getCell(rowNum, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEF4444' } };
-                worksheet.getCell(rowNum, 2).border = thinBorder;
+                // Merge columns 2 to 7 to show the long header text cleanly
+                worksheet.mergeCells(rowNum, 2, rowNum, 7);
+                const descRealCell = worksheet.getCell(rowNum, 2);
+                descRealCell.value = t('excel_legend_bottom_val');
+                descRealCell.font = { name: 'Segoe UI', size: 9, color: { argb: 'FF334155' } };
                 
+                // Completed row
                 rowNum++;
-                worksheet.getCell(rowNum, 2).value = "No Iniciado / Pendiente";
-                worksheet.getCell(rowNum, 2).font = { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FF1E293B' } };
-                worksheet.getCell(rowNum, 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF64748B' } };
-                worksheet.getCell(rowNum, 2).border = thinBorder;
+                const compIndicator = worksheet.getCell(rowNum, 2);
+                compIndicator.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+                compIndicator.border = thinBorder;
+                
+                worksheet.getCell(rowNum, 3).value = t('status_completed');
+                worksheet.getCell(rowNum, 3).font = { name: 'Segoe UI', size: 9, color: { argb: 'FF334155' } };
+                
+                // In Progress row
+                rowNum++;
+                const progIndicator = worksheet.getCell(rowNum, 2);
+                progIndicator.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };
+                progIndicator.border = thinBorder;
+                
+                worksheet.getCell(rowNum, 3).value = t('status_in_progress');
+                worksheet.getCell(rowNum, 3).font = { name: 'Segoe UI', size: 9, color: { argb: 'FF334155' } };
+                
+                // Blocked row
+                rowNum++;
+                const blockIndicator = worksheet.getCell(rowNum, 2);
+                blockIndicator.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEF4444' } };
+                blockIndicator.border = thinBorder;
+                
+                worksheet.getCell(rowNum, 3).value = t('status_blocked');
+                worksheet.getCell(rowNum, 3).font = { name: 'Segoe UI', size: 9, color: { argb: 'FF334155' } };
+                
+                // Pending/Not Started row
+                rowNum++;
+                const pendIndicator = worksheet.getCell(rowNum, 2);
+                pendIndicator.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF64748B' } };
+                pendIndicator.border = thinBorder;
+                
+                worksheet.getCell(rowNum, 3).value = t('excel_legend_pending');
+                worksheet.getCell(rowNum, 3).font = { name: 'Segoe UI', size: 9, color: { argb: 'FF334155' } };
             }
 function renderGanttColgroup() {
     const colgroup = document.getElementById("gantt-colgroup");
@@ -1525,7 +2447,7 @@ function renderGantt() {
         }
         
         thMonth.colSpan = m.weeks;
-        thMonth.textContent = m.name;
+        thMonth.textContent = translateMonth(m.name);
         monthRow.appendChild(thMonth);
         
         for (let w = 1; w <= m.weeks; w++) {
@@ -1556,7 +2478,7 @@ function renderGantt() {
     thActions.style.width = "60px";
     thActions.style.textAlign = "center";
     thActions.style.verticalAlign = "middle";
-    thActions.innerHTML = "Acción";
+    thActions.innerHTML = t('gantt_th_action');
     monthRow.appendChild(thActions);
 
     // 2. Renderizar filas de datos
@@ -1566,7 +2488,8 @@ function renderGantt() {
     if (filteredTasks.length === 0) {
         const tr = document.createElement("tr");
         // colspan=51 (6 columnas fijas + 44 semanas + 1 acción)
-        tr.innerHTML = `<td colspan="51" style="text-align: center; padding: 2rem; color: var(--text-muted);">No se encontraron tareas que coincidan con los filtros.</td>`;
+        const emptyMsg = currentLanguage === 'en' ? 'No tasks were found matching the filters.' : 'No se encontraron tareas que coincidan con los filtros.';
+        tr.innerHTML = `<td colspan="51" style="text-align: center; padding: 2rem; color: var(--text-muted);">${emptyMsg}</td>`;
         tbody.appendChild(tr);
         return;
     }
@@ -1585,7 +2508,7 @@ function renderGantt() {
             
             const unionSchedule = getProjectUnionSchedule(projectTasks);
             const timing = getGanttRowTiming(unionSchedule);
-            const durationText = timing.durationWeeks > 0 ? `${timing.durationWeeks} sem.` : "-";
+            const durationText = timing.durationWeeks > 0 ? t('excel_duration_weeks', { count: timing.durationWeeks }) : "-";
             
             const tr = document.createElement("tr");
             tr.style.backgroundColor = "rgba(59, 130, 246, 0.03)";
@@ -1603,7 +2526,7 @@ function renderGantt() {
                 <td class="sticky-col-1" style="font-weight:700; color:hsl(var(--primary));">${projName}</td>
                 <td class="sticky-col-2" style="font-size:0.75rem; color:var(--text-muted);" title="${uniqueResps}">${uniqueResps}</td>
                 <td class="sticky-col-3" style="font-weight:600;" title="${desc}">
-                    <span style="color:var(--text-muted); font-size:0.75rem; margin-right:0.25rem;">[${projectTasks.length} tareas]</span> ${desc}
+                    <span style="color:var(--text-muted); font-size:0.75rem; margin-right:0.25rem;">[${projectTasks.length} ${t('badge_tasks_count')}]</span> ${desc}
                 </td>
                 <td class="sticky-col-4"><span class="badge ${badgeClass}">${uniqueComps}</span></td>
                 <td class="sticky-col-5" style="text-align:center;">${timing.startDate}</td>
@@ -1656,9 +2579,11 @@ function renderGantt() {
             // Botón ver detalles
             const tdAction = document.createElement("td");
             tdAction.className = "row-actions-cell";
+            const detailsTitle = currentLanguage === 'en' ? 'View Task Details' : 'Ver Detalle de Tareas';
+            const detailsLabel = currentLanguage === 'en' ? 'Details' : 'Detalles';
             tdAction.innerHTML = `
-                <button class="btn" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;" onclick="drillDownProject('${projName.replace(/'/g, "\\'")}')" title="Ver Detalle de Tareas">
-                    <i data-lucide="eye" style="width: 12px; height: 12px;"></i> Detalles
+                <button class="btn" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;" onclick="drillDownProject('${projName.replace(/'/g, "\\'")}')" title="${detailsTitle}">
+                    <i data-lucide="eye" style="width: 12px; height: 12px;"></i> ${detailsLabel}
                 </button>
             `;
             tr.appendChild(tdAction);
@@ -1678,7 +2603,7 @@ function renderGantt() {
         else if (task.compania === "TBAR/SAR") badgeClass = "badge-both";
         
         const timing = getGanttRowTiming(task.schedule && task.schedule.length > 0 ? task.schedule : task.realSchedule);
-        const durationText = timing.durationWeeks > 0 ? `${timing.durationWeeks} sem.` : "-";
+        const durationText = timing.durationWeeks > 0 ? t('excel_duration_weeks', { count: timing.durationWeeks }) : "-";
         
         tr.innerHTML = `
             <td class="sticky-col-1" style="font-weight:600;">${task.proyecto}</td>
@@ -1747,8 +2672,9 @@ function renderGantt() {
         const isViewer = (currentUserRole === "viewer");
         const tdAction = document.createElement("td");
         tdAction.className = "row-actions-cell";
+        const btnTitle = isViewer ? t('modal_title_details') : t('edit_details_tooltip');
         tdAction.innerHTML = `
-            <button class="row-edit-btn" title="${isViewer ? 'Ver Detalles' : 'Editar Detalles'}">
+            <button class="row-edit-btn" title="${btnTitle}">
                 <i data-lucide="${isViewer ? 'eye' : 'edit-3'}" style="width: 16px; height: 16px;"></i>
             </button>
         `;
@@ -1844,7 +2770,7 @@ function renderKanban() {
                 <span class="kanban-card-responsible">
                     <i data-lucide="user" style="width: 12px; height: 12px;"></i> ${task.responsable}
                 </span>
-                <span>${weeksPlanned} sem.</span>
+                <span>${t('excel_duration_weeks', { count: weeksPlanned })}</span>
             </div>
         `;
         
@@ -1900,7 +2826,8 @@ function renderTable() {
     tbody.innerHTML = "";
 
     if (filteredTasks.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">No se encontraron tareas.</td></tr>`;
+        const emptyMsg = currentLanguage === 'en' ? 'No tasks found.' : 'No se encontraron tareas.';
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">${emptyMsg}</td></tr>`;
         return;
     }
 
@@ -1908,17 +2835,18 @@ function renderTable() {
         const tr = document.createElement("tr");
         
         let statusBadgeClass = "status-pending";
-        let statusText = "No Iniciado";
+        let statusText = t('status_not_started');
         
-        if (task.status === "Completed") { statusBadgeClass = "status-completed"; statusText = "Completado"; }
-        else if (task.status === "In Progress") { statusBadgeClass = "status-progress"; statusText = "En Progreso"; }
-        else if (task.status === "Blocked") { statusBadgeClass = "status-blocked"; statusText = "Bloqueado"; }
+        if (task.status === "Completed") { statusBadgeClass = "status-completed"; statusText = t('status_completed'); }
+        else if (task.status === "In Progress") { statusBadgeClass = "status-progress"; statusText = t('status_in_progress'); }
+        else if (task.status === "Blocked") { statusBadgeClass = "status-blocked"; statusText = t('status_blocked'); }
         
         let badgeClass = "badge-tbar";
         if (task.compania === "SAR") badgeClass = "badge-sar";
         else if (task.compania === "TBAR/SAR") badgeClass = "badge-both";
 
         const isViewer = (currentUserRole === "viewer");
+        const btnTitle = isViewer ? t('modal_title_details') : t('ctx_edit_task');
         tr.innerHTML = `
             <td style="font-weight: 600;">${task.proyecto}</td>
             <td>${task.responsable}</td>
@@ -1926,7 +2854,7 @@ function renderTable() {
             <td><span class="badge ${badgeClass}">${task.compania}</span></td>
             <td><span class="status-pill ${statusBadgeClass}">${statusText}</span></td>
             <td class="row-actions-cell">
-                <button class="row-edit-btn" title="${isViewer ? 'Ver Detalles' : 'Editar Tarea'}">
+                <button class="row-edit-btn" title="${btnTitle}">
                     <i data-lucide="${isViewer ? 'eye' : 'edit-3'}" style="width: 16px; height: 16px;"></i>
                 </button>
             </td>
@@ -1956,7 +2884,7 @@ function openModal(taskId = null) {
         deleteBtn.style.borderColor = "rgba(239, 68, 68, 0.4)";
         deleteBtn.style.color = "#f87171";
         deleteBtn.style.marginRight = "auto";
-        deleteBtn.innerHTML = '<i data-lucide="trash-2" style="width:16px; height:16px;"></i> Eliminar';
+        deleteBtn.innerHTML = `<i data-lucide="trash-2" style="width:16px; height:16px;"></i> ${t('modal_btn_delete')}`;
         modal.querySelector(".modal-footer").prepend(deleteBtn);
         deleteBtn.addEventListener("click", deleteTaskFromModal);
     }
@@ -1990,7 +2918,7 @@ function openModal(taskId = null) {
         const task = tasks.find(t => t.id === taskId);
         if (!task) return;
         
-        title.textContent = isViewer ? "Detalles de la Tarea" : "Editar Tarea";
+        title.textContent = isViewer ? t('modal_title_details') : t('modal_title_edit');
         document.getElementById("edit-task-id").value = task.id;
         document.getElementById("edit-proyecto").value = task.proyecto;
         document.getElementById("edit-responsable").value = task.responsable;
@@ -2002,7 +2930,7 @@ function openModal(taskId = null) {
         deleteBtn.style.display = (isViewer || isCollaborator) ? "none" : "inline-flex";
     } else {
         // Modo Nueva Tarea
-        title.textContent = "Nueva Tarea Hoshin";
+        title.textContent = t('modal_title_new');
         document.getElementById("edit-task-id").value = "";
         document.getElementById("edit-proyecto").value = "";
         document.getElementById("edit-responsable").value = "";
@@ -2049,7 +2977,7 @@ function saveTaskModal() {
     const notes = document.getElementById("edit-notes").value.trim();
 
     if (!proyecto || !responsable || !tarea) {
-        alert("Por favor completa los campos obligatorios: Proyecto, Responsable y Tarea.");
+        alert(t('error_fields_required'));
         return;
     }
 
@@ -2093,7 +3021,7 @@ function deleteTaskFromModal() {
     if (!idVal) return;
     
     const taskId = parseInt(idVal);
-    if (confirm("¿Estás seguro de que deseas eliminar esta tarea permanentemente?")) {
+    if (confirm(t('confirm_delete_task'))) {
         tasks = tasks.filter(t => t.id !== taskId);
         saveToLocalStorage();
         populateFilterDropdowns();
@@ -2139,6 +3067,10 @@ function initProjectsMetadata() {
 
 function saveProjectsMetadata() {
     localStorage.setItem("hoshin_projects_metadata", JSON.stringify(projectsMetadata));
+    if (isSharePoint) {
+        writeSpFile("hoshin_metadata.json", JSON.stringify(projectsMetadata, null, 2))
+            .catch(e => console.error("Error guardando metadata de proyectos en SharePoint:", e));
+    }
 }
 
 function renderProjects() {
@@ -2177,19 +3109,19 @@ function renderProjects() {
             <div class="project-card-header">
                 <div class="project-card-title">${projName}</div>
                 <select class="select-filter project-status-select" style="min-width: 120px; font-size: 0.75rem; padding: 0.25rem 1.5rem 0.25rem 0.5rem; background-position: right 0.25rem center;" data-project="${projName}" ${isReadOnlyProj ? 'disabled' : ''}>
-                    <option value="Not Started" ${proj.status === 'Not Started' ? 'selected' : ''}>No Iniciado</option>
-                    <option value="In Progress" ${proj.status === 'In Progress' ? 'selected' : ''}>En Progreso</option>
-                    <option value="Completed" ${proj.status === 'Completed' ? 'selected' : ''}>Completado</option>
-                    <option value="Blocked" ${proj.status === 'Blocked' ? 'selected' : ''}>Bloqueado</option>
+                    <option value="Not Started" ${proj.status === 'Not Started' ? 'selected' : ''}>${t('status_not_started')}</option>
+                    <option value="In Progress" ${proj.status === 'In Progress' ? 'selected' : ''}>${t('status_in_progress')}</option>
+                    <option value="Completed" ${proj.status === 'Completed' ? 'selected' : ''}>${t('status_completed')}</option>
+                    <option value="Blocked" ${proj.status === 'Blocked' ? 'selected' : ''}>${t('status_blocked')}</option>
                 </select>
             </div>
             
-            <textarea class="project-desc-textarea" placeholder="Escribe una descripción del proyecto..." data-project="${projName}" ${isReadOnlyProj ? 'disabled' : ''}>${proj.description || ''}</textarea>
+            <textarea class="project-desc-textarea" placeholder="${t('project_card_desc_placeholder')}" data-project="${projName}" ${isReadOnlyProj ? 'disabled' : ''}>${proj.description || ''}</textarea>
             
             <div>
                 <div class="project-card-meta">
-                    <span>Progreso del Proyecto</span>
-                    <span>${completedTasks}/${totalTasks} Tareas (${progressPct}%)</span>
+                    <span>${t('project_card_progress')}</span>
+                    <span>${completedTasks}/${totalTasks} ${t('nav_tasks').toLowerCase()} (${progressPct}%)</span>
                 </div>
                 <div class="bar-outer" style="margin-top: 0.25rem; height: 0.375rem;">
                     <div class="bar-inner" style="width: ${progressPct}%; background-color: ${progressPct === 100 ? '#10b981' : 'hsl(var(--primary))'}"></div>
@@ -2198,7 +3130,7 @@ function renderProjects() {
             
             <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
                 <button class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" onclick="filterByProjectFromCard('${projName}')">
-                    <i data-lucide="filter" style="width: 12px; height: 12px;"></i> Filtrar Gantt
+                    <i data-lucide="filter" style="width: 12px; height: 12px;"></i> ${t('project_card_btn_filter')}
                 </button>
             </div>
         `;
@@ -2314,18 +3246,18 @@ function showGanttContextMenu(e, taskId, monthName, weekNum) {
     }
     
     if (isScheduled) {
-        togglePlanText.textContent = "Plan: Eliminar Semana";
+        togglePlanText.textContent = t('ctx_plan_deactivate');
         togglePlanItem.classList.add("remove-action");
     } else {
-        togglePlanText.textContent = "Plan: Activar Semana";
+        togglePlanText.textContent = t('ctx_plan_activate');
         togglePlanItem.classList.remove("remove-action");
     }
     
     if (isRealScheduled) {
-        toggleRealText.textContent = "Real: Eliminar Semana";
+        toggleRealText.textContent = t('ctx_real_deactivate');
         toggleRealItem.classList.add("remove-action");
     } else {
-        toggleRealText.textContent = "Real: Activar Semana";
+        toggleRealText.textContent = t('ctx_real_activate');
         toggleRealItem.classList.remove("remove-action");
     }
     
@@ -2355,4 +3287,61 @@ function updateTaskStatusDirectly(taskId, newStatus) {
         saveToLocalStorage();
         renderCurrentView(); // Recarga la vista activa y actualiza dashboards/Gantt
     }
+}
+
+// Renderizar ABM de Usuarios (Colaboradores)
+function renderUsers() {
+    const tbody = document.getElementById("users-table-body");
+    if (!tbody) return;
+    
+    tbody.innerHTML = "";
+    
+    // Fila fija para el Administrador permanente "nramirez"
+    const trAdmin = document.createElement("tr");
+    trAdmin.innerHTML = `
+        <td><strong>nramirez</strong></td>
+        <td><span class="status-pill status-completed">${t('admin_permanent_label')}</span></td>
+        <td style="text-align: center;">
+            <button class="btn-delete-user" disabled title="${t('admin_cannot_delete')}">
+                <i data-lucide="trash-2" style="width: 1rem; height: 1rem;"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(trAdmin);
+    
+    // Filas para los colaboradores de la lista
+    collaboratorsList.forEach(user => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>${user}</strong></td>
+            <td><span class="status-pill status-progress">${t('role_label_collaborator')}</span></td>
+            <td style="text-align: center;">
+                <button class="btn-delete-user btn-remove-collab" data-user="${user}" title="${t('delete_collaborator_tooltip')}">
+                    <i data-lucide="trash-2" style="width: 1rem; height: 1rem;"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    // Registrar eventos para los botones de eliminar colaborador
+    tbody.querySelectorAll(".btn-remove-collab").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const user = btn.getAttribute("data-user");
+            if (confirm(t('confirm_remove_user', { user: user }))) {
+                collaboratorsList = collaboratorsList.filter(c => c !== user);
+                saveCollaborators();
+                renderUsers();
+                
+                // Si el usuario eliminado es el usuario actual logueado, re-evaluar rol
+                if (windowsUsername && windowsUsername.toLowerCase() === user.toLowerCase()) {
+                    currentUserRole = "viewer";
+                    localStorage.setItem("hoshin_user_role", currentUserRole);
+                    renderCurrentView();
+                }
+            }
+        });
+    });
+    
+    safeCreateIcons();
 }
