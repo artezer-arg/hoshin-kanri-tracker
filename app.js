@@ -975,6 +975,7 @@ function setupFirebaseListeners() {
         }
     }, err => {
         console.error("Error en el escuchador de tareas de Firebase:", err);
+        alert("Error de lectura en Firebase (tareas): " + err.message);
         tasksReady = true;
         checkAllReady();
     });
@@ -999,6 +1000,7 @@ function setupFirebaseListeners() {
         }
     }, err => {
         console.error("Error en el escuchador de metadatos de Firebase:", err);
+        alert("Error de lectura en Firebase (metadatos): " + err.message);
         metadataReady = true;
         checkAllReady();
     });
@@ -1026,6 +1028,7 @@ function setupFirebaseListeners() {
         }
     }, err => {
         console.error("Error en el escuchador de colaboradores de Firebase:", err);
+        alert("Error de lectura en Firebase (colaboradores): " + err.message);
         collaboratorsReady = true;
         checkAllReady();
     });
