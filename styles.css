@@ -1620,3 +1620,15 @@ th.current-week-column::before {
     }
 }
 
+/* Storage badge styling */
+.storage-badge-online {
+    background-color: hsla(var(--status-completed), 0.15);
+    border: 1px solid hsl(var(--status-completed));
+    color: hsl(var(--status-completed));
+}
+
+.storage-badge-offline {
+    background-color: hsla(var(--status-progress), 0.15);
+    border: 1px solid hsl(var(--status-progress));
+    color: hsl(var(--status-progress));
+}

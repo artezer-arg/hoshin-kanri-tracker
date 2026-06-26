@@ -47,6 +47,10 @@
                 </div>
                 
                 <div class="user-settings-section">
+                    <span id="storage-status-badge" class="storage-badge-offline" style="font-size: 0.75rem; padding: 0.35rem 0.6rem; border-radius: 0.375rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; margin-right: 0.25rem;">
+                        <i data-lucide="database" style="width: 12px; height: 12px;"></i>
+                        <span id="storage-status-text">Local</span>
+                    </span>
                     <div id="user-badge-container" class="user-badge-container" style="display: none;"></div>
                     <select id="role-selector" class="select-filter" style="min-width: auto; padding-right: 1.5rem; background-position: right 0.35rem center; margin-right: 0.5rem;" title="Cambiar Rol de Usuario">
                         <option value="admin" data-i18n="role_admin">✏️ Editor</option>
@@ -548,6 +552,11 @@
             </button>
         </div>
     </div>
+
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
 
     <!-- Inject data.js first, then app.js -->
     <script src="data.js"></script>

@@ -29,6 +29,8 @@ const MONTH_MONDAYS = {
 
 // Estado global de la aplicación
 let tasks = [];
+let db = null;
+let useFirebase = false;
 let projectsMetadata = {};
 let currentView = "dashboard";
 let currentUserRole = "admin"; // Rol por defecto
@@ -659,6 +661,10 @@ function saveCollaborators() {
         writeSpFile("hoshin_collaborators.json", JSON.stringify(collaboratorsList, null, 2))
             .catch(e => console.error("Error guardando colaboradores en SharePoint:", e));
     }
+    if (useFirebase && db) {
+        db.collection("config").doc("collaborators").set({ list: collaboratorsList })
+            .catch(e => console.error("Error guardando colaboradores en Firebase:", e));
+    }
 }
 
 // Detectar el usuario de Windows a través del API local o SharePoint
@@ -874,24 +880,178 @@ async function syncFromSharePoint() {
     }
 }
 
+
+// Inicializar Firebase
+function initFirebase() {
+    const badge = document.getElementById("storage-status-badge");
+    const badgeText = document.getElementById("storage-status-text");
+
+    if (typeof firebaseConfig !== 'undefined' && 
+        firebaseConfig.apiKey && 
+        firebaseConfig.apiKey !== "YOUR_API_KEY" && 
+        firebaseConfig.projectId && 
+        firebaseConfig.projectId !== "YOUR_PROJECT_ID") {
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            useFirebase = true;
+            console.log("Firebase Firestore inicializado correctamente.");
+            
+            if (badge && badgeText) {
+                badge.className = "storage-badge-online";
+                badgeText.textContent = "Firebase";
+                const icon = badge.querySelector("i");
+                if (icon) icon.setAttribute("data-lucide", "cloud-lightning");
+            }
+        } catch (error) {
+            console.error("Error al inicializar Firebase:", error);
+        }
+    } else {
+        console.log("Firebase no está configurado o tiene valores por defecto. Usando localStorage como fallback.");
+        if (badge && badgeText) {
+            badge.className = "storage-badge-offline";
+            badgeText.textContent = "Local";
+        }
+    }
+}
+
+// Configurar escuchadores en tiempo real para Firebase
+function setupFirebaseListeners() {
+    let tasksReady = false;
+    let metadataReady = false;
+    let collaboratorsReady = false;
+    
+    function checkAllReady() {
+        if (tasksReady && metadataReady && collaboratorsReady) {
+            detectWindowsUser().then(() => {
+                initApp();
+                setupEventListeners();
+                safeCreateIcons();
+                startHeartbeat();
+            });
+        }
+    }
+
+    // 1. Escuchador de tareas
+    db.collection("tasks").onSnapshot(snapshot => {
+        let fbTasks = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            data.id = parseInt(doc.id);
+            fbTasks.push(data);
+        });
+
+        // Sembrar base de datos si está vacía
+        if (fbTasks.length === 0 && typeof BASE_DATA !== 'undefined' && BASE_DATA.length > 0) {
+            console.log("La colección de tareas en Firebase está vacía. Sembrando base de datos con baseline...");
+            const batch = db.batch();
+            BASE_DATA.forEach(task => {
+                const docRef = db.collection("tasks").doc(task.id.toString());
+                batch.set(docRef, task);
+            });
+            batch.commit().then(() => {
+                console.log("Base de datos sembrada correctamente.");
+            }).catch(e => console.error("Error al sembrar Firebase:", e));
+            return;
+        }
+
+        // Ordenar tareas por ID
+        fbTasks.sort((a, b) => a.id - b.id);
+        
+        const isFirstLoad = !tasksReady;
+        tasks = fbTasks;
+        localStorage.setItem("hoshin_tasks", JSON.stringify(tasks));
+        tasksReady = true;
+
+        if (!isFirstLoad) {
+            console.log("Cambios en tareas detectados en Firebase. Re-renderizando.");
+            populateFilterDropdowns();
+            renderCurrentView();
+        } else {
+            checkAllReady();
+        }
+    }, err => {
+        console.error("Error en el escuchador de tareas de Firebase:", err);
+        tasksReady = true;
+        checkAllReady();
+    });
+
+    // 2. Escuchador de metadata de proyectos
+    db.collection("config").doc("projectsMetadata").onSnapshot(doc => {
+        if (doc.exists) {
+            projectsMetadata = doc.data();
+        } else {
+            projectsMetadata = {};
+        }
+        localStorage.setItem("hoshin_projects_metadata", JSON.stringify(projectsMetadata));
+        
+        const isFirstLoad = !metadataReady;
+        metadataReady = true;
+
+        if (!isFirstLoad) {
+            console.log("Cambios en metadatos recibidos de Firebase. Re-renderizando.");
+            renderCurrentView();
+        } else {
+            checkAllReady();
+        }
+    }, err => {
+        console.error("Error en el escuchador de metadatos de Firebase:", err);
+        metadataReady = true;
+        checkAllReady();
+    });
+
+    // 3. Escuchador de colaboradores
+    db.collection("config").doc("collaborators").onSnapshot(doc => {
+        if (doc.exists && doc.data().list) {
+            collaboratorsList = doc.data().list;
+        } else {
+            collaboratorsList = [];
+        }
+        localStorage.setItem("hoshin_collaborators", JSON.stringify(collaboratorsList));
+        
+        const isFirstLoad = !collaboratorsReady;
+        collaboratorsReady = true;
+
+        if (!isFirstLoad) {
+            console.log("Cambios en colaboradores recibidos de Firebase. Re-evaluando permisos.");
+            detectWindowsUser().then(() => {
+                renderUsers();
+                renderCurrentView();
+            });
+        } else {
+            checkAllReady();
+        }
+    }, err => {
+        console.error("Error en el escuchador de colaboradores de Firebase:", err);
+        collaboratorsReady = true;
+        checkAllReady();
+    });
+}
+
 // Cargar estado inicial
 document.addEventListener("DOMContentLoaded", async () => {
     initSharePointContext();
-    if (isSharePoint) {
-        await syncFromSharePoint();
-        await ensureSpFolder("active_users");
-    } else {
-        loadCollaborators();
-    }
-
-    await detectWindowsUser();
-    initApp();
-    setupEventListeners();
-    safeCreateIcons();
-    startHeartbeat(); // Iniciar envío de heartbeats
+    initFirebase();
     
-    // Polling de sincronización cada 10 segundos en SharePoint
-    if (isSharePoint) {
+    if (useFirebase && db) {
+        setupFirebaseListeners();
+    } else {
+        if (isSharePoint) {
+            await syncFromSharePoint();
+            await ensureSpFolder("active_users");
+        } else {
+            loadCollaborators();
+        }
+
+        await detectWindowsUser();
+        initApp();
+        setupEventListeners();
+        safeCreateIcons();
+        startHeartbeat(); // Iniciar envío de heartbeats
+    }
+    
+    // Polling de sincronización cada 10 segundos en SharePoint (solo si no es Firebase)
+    if (isSharePoint && !useFirebase) {
         setInterval(async () => {
             const oldTasks = JSON.stringify(tasks);
             const oldMetadata = JSON.stringify(projectsMetadata);
@@ -985,23 +1145,25 @@ function initApp() {
         roleSelector.value = currentUserRole;
     }
 
-    // Intentar cargar desde localStorage con validación robusta
-    const savedData = localStorage.getItem("hoshin_tasks");
-    if (savedData) {
-        try {
-            const parsed = JSON.parse(savedData);
-            if (Array.isArray(parsed)) {
-                tasks = parsed;
-            } else {
-                console.warn("localStorage hoshin_tasks no es un array válido. Cargando datos por defecto.");
+    if (!useFirebase) {
+        // Intentar cargar desde localStorage con validación robusta
+        const savedData = localStorage.getItem("hoshin_tasks");
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                if (Array.isArray(parsed)) {
+                    tasks = parsed;
+                } else {
+                    console.warn("localStorage hoshin_tasks no es un array válido. Cargando datos por defecto.");
+                    loadBaselineData();
+                }
+            } catch (e) {
+                console.error("Error al parsear localStorage, cargando datos por defecto:", e);
                 loadBaselineData();
             }
-        } catch (e) {
-            console.error("Error al parsear localStorage, cargando datos por defecto:", e);
+        } else {
             loadBaselineData();
         }
-    } else {
-        loadBaselineData();
     }
 
     // Asegurar que tasks sea un array válido antes de proceder
@@ -1040,17 +1202,19 @@ function initApp() {
         }
     }
 
-    // Intentar cargar metadata de proyectos
-    const savedProjects = localStorage.getItem("hoshin_projects_metadata");
-    if (savedProjects) {
-        try {
-            projectsMetadata = JSON.parse(savedProjects) || {};
-        } catch (e) {
-            console.error("Error al parsear projectsMetadata:", e);
+    if (!useFirebase) {
+        // Intentar cargar metadata de proyectos
+        const savedProjects = localStorage.getItem("hoshin_projects_metadata");
+        if (savedProjects) {
+            try {
+                projectsMetadata = JSON.parse(savedProjects) || {};
+            } catch (e) {
+                console.error("Error al parsear projectsMetadata:", e);
+                initProjectsMetadata();
+            }
+        } else {
             initProjectsMetadata();
         }
-    } else {
-        initProjectsMetadata();
     }
 
     // Asegurar que todos los proyectos actuales en tasks tengan metadata y se guarden
@@ -1149,13 +1313,44 @@ function loadBaselineData() {
     }
 }
 
-// Guardar datos en localStorage
-function saveToLocalStorage() {
+// Guardar datos en localStorage y Firebase si está activo
+function saveToLocalStorage(taskOrTaskId = null, isDeletion = false) {
     localStorage.setItem("hoshin_tasks", JSON.stringify(tasks));
     if (isSharePoint) {
         writeSpFile("hoshin_tasks.json", JSON.stringify(tasks, null, 2))
             .catch(e => console.error("Error guardando tareas en SharePoint:", e));
     }
+    if (useFirebase && db) {
+        if (taskOrTaskId !== null) {
+            if (isDeletion) {
+                return db.collection("tasks").doc(taskOrTaskId.toString()).delete()
+                    .catch(e => console.error("Error al eliminar tarea en Firebase:", e));
+            } else {
+                return db.collection("tasks").doc(taskOrTaskId.id.toString()).set(taskOrTaskId)
+                    .catch(e => console.error("Error al guardar tarea en Firebase:", e));
+            }
+        } else {
+            // Reemplazar todas las tareas en Firebase (importación o resiembra)
+            const tasksToSave = [...tasks]; // Copia local para evitar condiciones de carrera (race conditions)
+            return db.collection("tasks").get().then(snapshot => {
+                const batch = db.batch();
+                snapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                tasksToSave.forEach(t => {
+                    if (t && t.id) {
+                        const docRef = db.collection("tasks").doc(t.id.toString());
+                        batch.set(docRef, t);
+                    }
+                });
+                return batch.commit();
+            }).catch(e => {
+                console.error("Error en batch de Firebase:", e);
+                throw e;
+            });
+        }
+    }
+    return Promise.resolve();
 }
 
 // Rellenar dropdowns de filtros basados en los datos de las tareas
@@ -1409,7 +1604,7 @@ function setupEventListeners() {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (evt) => {
+        reader.onload = async (evt) => {
             try {
                 const imported = JSON.parse(evt.target.result);
                 let newTasks = [];
@@ -1427,11 +1622,14 @@ function setupEventListeners() {
 
                 if (confirm(t('confirm_import', { count: newTasks.length }))) {
                     tasks = newTasks;
-                    saveToLocalStorage();
+                    
+                    // Esperar a que se guarden las tareas en Firebase/localStorage
+                    await saveToLocalStorage();
                     
                     if (newMetadata) {
                         projectsMetadata = newMetadata;
-                        localStorage.setItem("hoshin_projects_metadata", JSON.stringify(projectsMetadata));
+                        // Esperar a que se guarde la metadata en Firebase/localStorage
+                        await saveProjectsMetadata();
                     } else {
                         initProjectsMetadata();
                     }
@@ -2729,7 +2927,7 @@ function toggleGanttWeek(taskId, monthName, weekNum, type = "plan") {
         }
     }
     
-    saveToLocalStorage();
+    saveToLocalStorage(task);
     renderGantt();
 }
 
@@ -2812,7 +3010,7 @@ function updateTaskStatus(taskId, newStatus) {
     const task = tasks.find(t => t.id === taskId);
     if (task && task.status !== newStatus) {
         task.status = newStatus;
-        saveToLocalStorage();
+        saveToLocalStorage(task);
         renderKanban();
     }
 }
@@ -2956,6 +3154,8 @@ function saveTaskModal() {
 
     if (currentUserRole === "viewer") return;
 
+    let targetTask = null;
+
     // Si es colaborador, solo permitimos actualizar estado de tarea existente
     if (currentUserRole === "collaborator") {
         if (!idVal) return; // Un colaborador no puede crear tareas nuevas
@@ -2963,7 +3163,8 @@ function saveTaskModal() {
         const task = tasks.find(t => t.id === taskId);
         if (task) {
             task.status = status;
-            saveToLocalStorage();
+            targetTask = task;
+            saveToLocalStorage(targetTask);
             populateFilterDropdowns();
             renderCurrentView();
             closeModal();
@@ -2992,10 +3193,11 @@ function saveTaskModal() {
             task.compania = compania;
             task.status = status;
             task.notes = notes;
+            targetTask = task;
         }
     } else {
-        // Crear nueva tarea
-        const nextId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+        // Crear nueva tarea - Generar ID único usando timestamp
+        const nextId = Date.now() + Math.floor(Math.random() * 1000);
         const newTask = {
             id: nextId,
             proyecto,
@@ -3007,9 +3209,10 @@ function saveTaskModal() {
             schedule: [] // Inicialmente sin semanas
         };
         tasks.push(newTask);
+        targetTask = newTask;
     }
 
-    saveToLocalStorage();
+    saveToLocalStorage(targetTask);
     populateFilterDropdowns();
     renderCurrentView();
     closeModal();
@@ -3023,7 +3226,7 @@ function deleteTaskFromModal() {
     const taskId = parseInt(idVal);
     if (confirm(t('confirm_delete_task'))) {
         tasks = tasks.filter(t => t.id !== taskId);
-        saveToLocalStorage();
+        saveToLocalStorage(taskId, true);
         populateFilterDropdowns();
         renderCurrentView();
         closeModal();
@@ -3071,6 +3274,11 @@ function saveProjectsMetadata() {
         writeSpFile("hoshin_metadata.json", JSON.stringify(projectsMetadata, null, 2))
             .catch(e => console.error("Error guardando metadata de proyectos en SharePoint:", e));
     }
+    if (useFirebase && db) {
+        return db.collection("config").doc("projectsMetadata").set(projectsMetadata)
+            .catch(e => console.error("Error guardando metadata de proyectos en Firebase:", e));
+    }
+    return Promise.resolve();
 }
 
 function renderProjects() {
