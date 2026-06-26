@@ -663,7 +663,10 @@ function saveCollaborators() {
     }
     if (useFirebase && db) {
         db.collection("config").doc("collaborators").set({ list: collaboratorsList })
-            .catch(e => console.error("Error guardando colaboradores en Firebase:", e));
+            .catch(e => {
+                console.error("Error guardando colaboradores en Firebase:", e);
+                alert("Error al guardar colaboradores en Firebase: " + e.message);
+            });
     }
 }
 
@@ -1324,10 +1327,16 @@ function saveToLocalStorage(taskOrTaskId = null, isDeletion = false) {
         if (taskOrTaskId !== null) {
             if (isDeletion) {
                 return db.collection("tasks").doc(taskOrTaskId.toString()).delete()
-                    .catch(e => console.error("Error al eliminar tarea en Firebase:", e));
+                    .catch(e => {
+                        console.error("Error al eliminar tarea en Firebase:", e);
+                        alert("Error al eliminar en Firebase: " + e.message);
+                    });
             } else {
                 return db.collection("tasks").doc(taskOrTaskId.id.toString()).set(taskOrTaskId)
-                    .catch(e => console.error("Error al guardar tarea en Firebase:", e));
+                    .catch(e => {
+                        console.error("Error al guardar tarea en Firebase:", e);
+                        alert("Error al guardar en Firebase: " + e.message);
+                    });
             }
         } else {
             // Reemplazar todas las tareas en Firebase (importación o resiembra)
@@ -1346,6 +1355,7 @@ function saveToLocalStorage(taskOrTaskId = null, isDeletion = false) {
                 return batch.commit();
             }).catch(e => {
                 console.error("Error en batch de Firebase:", e);
+                alert("Error de importación/lote en Firebase: " + e.message);
                 throw e;
             });
         }
@@ -3276,7 +3286,10 @@ function saveProjectsMetadata() {
     }
     if (useFirebase && db) {
         return db.collection("config").doc("projectsMetadata").set(projectsMetadata)
-            .catch(e => console.error("Error guardando metadata de proyectos en Firebase:", e));
+            .catch(e => {
+                console.error("Error guardando metadata de proyectos en Firebase:", e);
+                alert("Error al guardar metadatos de proyectos en Firebase: " + e.message);
+            });
     }
     return Promise.resolve();
 }
