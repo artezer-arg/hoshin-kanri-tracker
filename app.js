@@ -1127,6 +1127,15 @@ function setupFirebaseListeners() {
         const isFirstLoad = !tasksReady;
         tasks = fbTasks;
         localStorage.setItem("hoshin_tasks", JSON.stringify(tasks));
+        
+        if (useLocalServer) {
+            fetch("/api/tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(tasks)
+            }).catch(e => console.error("Error al replicar tareas a servidor local:", e));
+        }
+        
         tasksReady = true;
 
         if (!isFirstLoad) {
@@ -1150,6 +1159,14 @@ function setupFirebaseListeners() {
         }
         localStorage.setItem("hoshin_projects_metadata", JSON.stringify(projectsMetadata));
         
+        if (useLocalServer) {
+            fetch("/api/metadata", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(projectsMetadata)
+            }).catch(e => console.error("Error al replicar metadatos a servidor local:", e));
+        }
+        
         const isFirstLoad = !metadataReady;
         metadataReady = true;
 
@@ -1172,6 +1189,14 @@ function setupFirebaseListeners() {
             collaboratorsList = [];
         }
         localStorage.setItem("hoshin_collaborators", JSON.stringify(collaboratorsList));
+        
+        if (useLocalServer) {
+            fetch("/api/collaborators", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(collaboratorsList)
+            }).catch(e => console.error("Error al replicar colaboradores a servidor local:", e));
+        }
         
         const isFirstLoad = !collaboratorsReady;
         collaboratorsReady = true;
@@ -1198,8 +1223,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 1. Detectar si estamos en el servidor local de PowerShell
     await detectLocalServer();
     
-    // 2. Inicializar Firebase solo si no estamos en SharePoint ni en Servidor Local
-    if (!isSharePoint && !useLocalServer) {
+    // 2. Inicializar Firebase si no estamos en SharePoint (para habilitar replicación en la nube)
+    if (!isSharePoint) {
         initFirebase();
     }
     
