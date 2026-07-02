@@ -31,6 +31,7 @@ const MONTH_MONDAYS = {
 let tasks = [];
 let db = null;
 let useFirebase = false;
+let useLocalServer = false;
 let projectsMetadata = {};
 let currentView = "dashboard";
 let currentUserRole = "admin"; // Rol por defecto
@@ -131,7 +132,7 @@ const TRANSLATIONS = {
         ctx_edit_task: "Editar Tarea",
         ctx_change_status: "Cambiar Estado",
         users_title: "Personal con Acceso Autorizado",
-        users_subtitle: "El usuario <strong>nramirez</strong> siempre tiene permisos de <strong>Editor</strong> (Administrador). Los usuarios listados aquí tendrán permisos de <strong>Colaborador</strong>. Cualquier otro usuario de Windows no registrado tendrá permisos de <strong>Visor</strong> (Solo lectura).",
+        users_subtitle: "Los usuarios <strong>nramirez</strong> y <strong>artez</strong> siempre tienen permisos de <strong>Editor</strong> (Administrador). Los usuarios listados aquí tendrán permisos de <strong>Colaborador</strong>. Cualquier otro usuario de Windows no registrado tendrá permisos de <strong>Visor</strong> (Solo lectura).",
         users_th_username: "Usuario Windows",
         users_th_role: "Rol asignado",
         users_th_actions: "Acciones",
@@ -184,7 +185,7 @@ const TRANSLATIONS = {
         excel_legend_pending: "No Iniciado / Pendiente",
         error_backup_failed: "Ocurrió un error al generar la copia de seguridad: ",
         error_username_required: "Por favor, introduce un nombre de usuario de Windows.",
-        error_admin_permanent: "El usuario 'nramirez' es el Editor permanente y no necesita ser agregado.",
+        error_admin_permanent: "El usuario 'nramirez' o 'artez' es el Editor permanente y no necesita ser agregado.",
         error_user_already_registered: "Este usuario ya está registrado como colaborador.",
         prompt_windows_username: "Por favor, introduce tu nombre de usuario de Windows para identificarte:",
         edit_details_tooltip: "Editar Detalles",
@@ -282,7 +283,7 @@ const TRANSLATIONS = {
         ctx_edit_task: "Edit Task",
         ctx_change_status: "Change Status",
         users_title: "Authorized Access Personnel",
-        users_subtitle: "User <strong>nramirez</strong> always has <strong>Editor</strong> (Admin) permissions. Users listed here will have <strong>Collaborator</strong> permissions. Any other unregistered Windows user will have <strong>Viewer</strong> (Read-only) permissions.",
+        users_subtitle: "Users <strong>nramirez</strong> and <strong>artez</strong> always have <strong>Editor</strong> (Admin) permissions. Users listed here will have <strong>Collaborator</strong> permissions. Any other unregistered Windows user will have <strong>Viewer</strong> (Read-only) permissions.",
         users_th_username: "Windows User",
         users_th_role: "Assigned Role",
         users_th_actions: "Actions",
@@ -335,7 +336,7 @@ const TRANSLATIONS = {
         excel_legend_pending: "Not Started / Pending",
         error_backup_failed: "An error occurred while generating the backup: ",
         error_username_required: "Please enter a Windows username.",
-        error_admin_permanent: "The user 'nramirez' is the permanent Editor and does not need to be added.",
+        error_admin_permanent: "The user 'nramirez' or 'artez' is the permanent Editor and does not need to be added.",
         error_user_already_registered: "This user is already registered as a collaborator.",
         prompt_windows_username: "Please enter your Windows username to identify yourself:",
         edit_details_tooltip: "Edit Details",
@@ -661,6 +662,13 @@ function saveCollaborators() {
         writeSpFile("hoshin_collaborators.json", JSON.stringify(collaboratorsList, null, 2))
             .catch(e => console.error("Error guardando colaboradores en SharePoint:", e));
     }
+    if (useLocalServer) {
+        fetch("/api/collaborators", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(collaboratorsList)
+        }).catch(e => console.error("Error guardando colaboradores en servidor local:", e));
+    }
     if (useFirebase && db) {
         db.collection("config").doc("collaborators").set({ list: collaboratorsList })
             .catch(e => {
@@ -733,13 +741,20 @@ async function detectWindowsUser() {
     }
 
     // Determinar el rol automáticamente basado en el usuario resuelto
-    if (windowsUsername.toLowerCase() === "nramirez") {
-        currentUserRole = "admin";
+    let targetRole = "viewer";
+    if (windowsUsername.toLowerCase() === "nramirez" || windowsUsername.toLowerCase() === "artez") {
+        targetRole = "admin";
     } else if (collaboratorsList.some(c => c.toLowerCase() === windowsUsername.toLowerCase())) {
-        currentUserRole = "collaborator";
+        targetRole = "collaborator";
     } else {
-        currentUserRole = "viewer";
+        const savedRole = localStorage.getItem("hoshin_user_role");
+        if (savedRole === "admin" || savedRole === "collaborator") {
+            targetRole = savedRole;
+        } else {
+            targetRole = "viewer";
+        }
     }
+    currentUserRole = targetRole;
 
     // Guardar el rol en localStorage
     localStorage.setItem("hoshin_user_role", currentUserRole);
@@ -884,6 +899,154 @@ async function syncFromSharePoint() {
 }
 
 
+async function detectLocalServer() {
+    if (isSharePoint) return;
+    try {
+        const response = await fetch("/api/user");
+        if (response.ok) {
+            useLocalServer = true;
+            console.log("Servidor local PowerShell detectado. Usando API local de almacenamiento.");
+            
+            const badge = document.getElementById("storage-status-badge");
+            const badgeText = document.getElementById("storage-status-text");
+            if (badge && badgeText) {
+                badge.className = "storage-badge-online";
+                badge.style.backgroundColor = "#3b82f6";
+                badgeText.textContent = "Servidor Local";
+                const icon = badge.querySelector("i");
+                if (icon) icon.setAttribute("data-lucide", "server");
+            }
+        }
+    } catch (e) {
+        console.log("No se detectó el servidor local PowerShell. Usando localStorage como fallback.");
+    }
+}
+
+async function loadData() {
+    if (useLocalServer) {
+        try {
+            // 1. Cargar colaboradores
+            const resCollab = await fetch("/api/collaborators");
+            if (resCollab.ok) {
+                collaboratorsList = await resCollab.json();
+                localStorage.setItem("hoshin_collaborators", JSON.stringify(collaboratorsList));
+            } else {
+                loadCollaborators();
+            }
+
+            // 2. Cargar tareas
+            const resTasks = await fetch("/api/tasks");
+            if (resTasks.ok) {
+                tasks = await resTasks.json();
+                localStorage.setItem("hoshin_tasks", JSON.stringify(tasks));
+            } else {
+                loadBaselineData();
+                await saveToLocalStorage();
+            }
+
+            // 3. Cargar metadata de proyectos
+            const resMeta = await fetch("/api/metadata");
+            if (resMeta.ok) {
+                projectsMetadata = await resMeta.json();
+                localStorage.setItem("hoshin_projects_metadata", JSON.stringify(projectsMetadata));
+            } else {
+                initProjectsMetadata();
+                await saveProjectsMetadata();
+            }
+        } catch (err) {
+            console.error("Error al cargar datos desde el servidor local:", err);
+            loadFromLocalStorage();
+        }
+    } else {
+        if (isSharePoint) {
+            await syncFromSharePoint();
+        } else {
+            loadCollaborators();
+            loadFromLocalStorage();
+        }
+    }
+}
+
+function loadFromLocalStorage() {
+    const savedData = localStorage.getItem("hoshin_tasks");
+    if (savedData) {
+        try {
+            const parsed = JSON.parse(savedData);
+            if (Array.isArray(parsed)) {
+                tasks = parsed;
+            } else {
+                loadBaselineData();
+            }
+        } catch (e) {
+            loadBaselineData();
+        }
+    } else {
+        loadBaselineData();
+    }
+
+    const savedProjects = localStorage.getItem("hoshin_projects_metadata");
+    if (savedProjects) {
+        try {
+            projectsMetadata = JSON.parse(savedProjects) || {};
+        } catch (e) {
+            initProjectsMetadata();
+        }
+    } else {
+        initProjectsMetadata();
+    }
+}
+
+function startSyncPolling() {
+    if (window.syncIntervalId) {
+        clearInterval(window.syncIntervalId);
+    }
+    if ((isSharePoint || useLocalServer) && !useFirebase) {
+        window.syncIntervalId = setInterval(async () => {
+            const oldTasks = JSON.stringify(tasks);
+            const oldMetadata = JSON.stringify(projectsMetadata);
+            if (useLocalServer) {
+                try {
+                    const resTasks = await fetch("/api/tasks");
+                    if (resTasks.ok) {
+                        tasks = await resTasks.json();
+                        localStorage.setItem("hoshin_tasks", JSON.stringify(tasks));
+                    }
+                    const resMeta = await fetch("/api/metadata");
+                    if (resMeta.ok) {
+                        projectsMetadata = await resMeta.json();
+                        localStorage.setItem("hoshin_projects_metadata", JSON.stringify(projectsMetadata));
+                    }
+                } catch (e) {
+                    console.warn("Error en polling de servidor local:", e);
+                }
+            } else if (isSharePoint) {
+                await syncFromSharePoint();
+            }
+            if (JSON.stringify(tasks) !== oldTasks || JSON.stringify(projectsMetadata) !== oldMetadata) {
+                console.log("Cambios externos detectados. Re-renderizando vista.");
+                populateFilterDropdowns();
+                renderCurrentView();
+            }
+        }, 10000);
+    }
+}
+
+let fallbackTriggered = false;
+async function fallbackToLocalOrStorage() {
+    if (fallbackTriggered) return;
+    fallbackTriggered = true;
+    useFirebase = false;
+    console.log("Cambiando a modo local/servidor debido a indisponibilidad de Firebase.");
+    await detectLocalServer();
+    await loadData();
+    await detectWindowsUser();
+    initApp();
+    setupEventListeners();
+    safeCreateIcons();
+    startHeartbeat();
+    startSyncPolling();
+}
+
 // Inicializar Firebase
 function initFirebase() {
     const badge = document.getElementById("storage-status-badge");
@@ -975,9 +1138,7 @@ function setupFirebaseListeners() {
         }
     }, err => {
         console.error("Error en el escuchador de tareas de Firebase:", err);
-        alert("Error de lectura en Firebase (tareas): " + err.message);
-        tasksReady = true;
-        checkAllReady();
+        fallbackToLocalOrStorage();
     });
 
     // 2. Escuchador de metadata de proyectos
@@ -1000,9 +1161,7 @@ function setupFirebaseListeners() {
         }
     }, err => {
         console.error("Error en el escuchador de metadatos de Firebase:", err);
-        alert("Error de lectura en Firebase (metadatos): " + err.message);
-        metadataReady = true;
-        checkAllReady();
+        fallbackToLocalOrStorage();
     });
 
     // 3. Escuchador de colaboradores
@@ -1028,17 +1187,23 @@ function setupFirebaseListeners() {
         }
     }, err => {
         console.error("Error en el escuchador de colaboradores de Firebase:", err);
-        alert("Error de lectura en Firebase (colaboradores): " + err.message);
-        collaboratorsReady = true;
-        checkAllReady();
+        fallbackToLocalOrStorage();
     });
 }
 
 // Cargar estado inicial
 document.addEventListener("DOMContentLoaded", async () => {
     initSharePointContext();
-    initFirebase();
     
+    // 1. Detectar si estamos en el servidor local de PowerShell
+    await detectLocalServer();
+    
+    // 2. Inicializar Firebase solo si no estamos en SharePoint ni en Servidor Local
+    if (!isSharePoint && !useLocalServer) {
+        initFirebase();
+    }
+    
+    // 3. Flujo de inicialización de datos y vistas
     if (useFirebase && db) {
         setupFirebaseListeners();
     } else {
@@ -1046,7 +1211,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             await syncFromSharePoint();
             await ensureSpFolder("active_users");
         } else {
-            loadCollaborators();
+            await loadData();
         }
 
         await detectWindowsUser();
@@ -1054,20 +1219,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         setupEventListeners();
         safeCreateIcons();
         startHeartbeat(); // Iniciar envío de heartbeats
-    }
-    
-    // Polling de sincronización cada 10 segundos en SharePoint (solo si no es Firebase)
-    if (isSharePoint && !useFirebase) {
-        setInterval(async () => {
-            const oldTasks = JSON.stringify(tasks);
-            const oldMetadata = JSON.stringify(projectsMetadata);
-            await syncFromSharePoint();
-            if (JSON.stringify(tasks) !== oldTasks || JSON.stringify(projectsMetadata) !== oldMetadata) {
-                console.log("Cambios externos detectados en SharePoint. Re-renderizando vista.");
-                populateFilterDropdowns();
-                renderCurrentView();
-            }
-        }, 10000);
+        startSyncPolling();
     }
 });
 
@@ -1076,7 +1228,15 @@ function migrateSchedules(tasksArray) {
     if (!Array.isArray(tasksArray)) return;
     tasksArray.forEach(task => {
         if (!task) return;
-        if (!task.schedule) return;
+        if (!task.status) {
+            task.status = "Not Started";
+        }
+        if (!task.realSchedule) {
+            task.realSchedule = [];
+        }
+        if (!task.schedule) {
+            task.schedule = [];
+        }
         
         // Mapear los elementos existentes para buscar rápido
         const schedMap = {};
@@ -1151,7 +1311,7 @@ function initApp() {
         roleSelector.value = currentUserRole;
     }
 
-    if (!useFirebase) {
+    if (!useFirebase && !useLocalServer) {
         // Intentar cargar desde localStorage con validación robusta
         const savedData = localStorage.getItem("hoshin_tasks");
         if (savedData) {
@@ -1185,18 +1345,6 @@ function initApp() {
         saveToLocalStorage();
     }
 
-    // Resetear todas las tareas a "Not Started" una sola vez
-    const resetToNotStarted = localStorage.getItem("hoshin_tasks_reset_not_started_v1");
-    if (!resetToNotStarted) {
-        tasks.forEach(task => {
-            if (task) {
-                task.status = "Not Started";
-            }
-        });
-        localStorage.setItem("hoshin_tasks_reset_not_started_v1", "true");
-        saveToLocalStorage();
-    }
-
     // Si la carga inicial no tiene 'Digital Twin' (proyecto nuevo), agregarlos desde BASE_DATA
     const hasDigitalTwin = tasks.some(t => t && t.proyecto === "Digital Twin");
     if (!hasDigitalTwin && typeof BASE_DATA !== 'undefined' && Array.isArray(BASE_DATA)) {
@@ -1208,7 +1356,7 @@ function initApp() {
         }
     }
 
-    if (!useFirebase) {
+    if (!useFirebase && !useLocalServer) {
         // Intentar cargar metadata de proyectos
         const savedProjects = localStorage.getItem("hoshin_projects_metadata");
         if (savedProjects) {
@@ -1325,6 +1473,13 @@ function saveToLocalStorage(taskOrTaskId = null, isDeletion = false) {
     if (isSharePoint) {
         writeSpFile("hoshin_tasks.json", JSON.stringify(tasks, null, 2))
             .catch(e => console.error("Error guardando tareas en SharePoint:", e));
+    }
+    if (useLocalServer) {
+        fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(tasks)
+        }).catch(e => console.error("Error guardando tareas en servidor local:", e));
     }
     if (useFirebase && db) {
         if (taskOrTaskId !== null) {
@@ -1845,7 +2000,7 @@ function setupEventListeners() {
                 alert(t('error_username_required'));
                 return;
             }
-            if (username.toLowerCase() === "nramirez") {
+            if (username.toLowerCase() === "nramirez" || username.toLowerCase() === "artez") {
                 alert(t('error_admin_permanent'));
                 return;
             }
@@ -1864,6 +2019,128 @@ function setupEventListeners() {
                 currentUserRole = "collaborator";
                 localStorage.setItem("hoshin_user_role", currentUserRole);
                 renderCurrentView();
+            }
+        });
+    }
+
+    // Exportar CSV para Power BI
+    const btnExportCsv = document.getElementById("btn-export-csv");
+    if (btnExportCsv) {
+        btnExportCsv.addEventListener("click", () => {
+            try {
+                // Funciones auxiliares internas para calcular fechas y progreso
+                function getWeekDateRangeLocal(monthName, weekNum) {
+                    const yearMap = {
+                        "Junio": 2026, "Julio": 2026, "Agosto": 2026, "Septiembre": 2026,
+                        "Octubre": 2026, "Noviembre": 2026, "Diciembre": 2026,
+                        "Enero": 2027, "Febrero": 2027, "Marzo": 2027
+                    };
+                    const monthMapNum = {
+                        "Junio": "06", "Julio": "07", "Agosto": "08", "Septiembre": "09",
+                        "Octubre": "10", "Noviembre": "11", "Diciembre": "12",
+                        "Enero": "01", "Febrero": "02", "Marzo": "03"
+                    };
+                    const days = MONTH_MONDAYS[monthName];
+                    if (!days || weekNum < 1 || weekNum > days.length) return null;
+                    const day = days[weekNum - 1];
+                    const mm = monthMapNum[monthName];
+                    const yyyy = yearMap[monthName];
+                    const startDate = new Date(`${yyyy}-${mm}-${day}T00:00:00`);
+                    const endDate = new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000);
+                    return { startDate, endDate };
+                }
+
+                function getTaskDateRangeLocal(scheduleArray) {
+                    if (!scheduleArray || scheduleArray.length === 0) return { startStr: "", endStr: "" };
+                    let minDate = null;
+                    let maxDate = null;
+                    scheduleArray.forEach(item => {
+                        const range = getWeekDateRangeLocal(item.month, item.week);
+                        if (range) {
+                            if (!minDate || range.startDate < minDate) minDate = range.startDate;
+                            if (!maxDate || range.endDate > maxDate) maxDate = range.endDate;
+                        }
+                    });
+                    if (!minDate || !maxDate) return { startStr: "", endStr: "" };
+                    const formatDate = (d) => {
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                    };
+                    return { startStr: formatDate(minDate), endStr: formatDate(maxDate) };
+                }
+
+                function getStatusProgressLocal(status) {
+                    switch (status) {
+                        case "Completed": return 100;
+                        case "In Progress": return 50;
+                        case "Blocked": return 25;
+                        case "Not Started":
+                        default: return 0;
+                    }
+                }
+
+                const headers = [
+                    "ID Tarea",
+                    "Proyecto",
+                    "Responsable",
+                    "Tarea",
+                    "Compania",
+                    "Estado",
+                    "Porcentaje Avance",
+                    "Fecha Inicio Planificada",
+                    "Fecha Fin Planificada",
+                    "Semanas Planificadas",
+                    "Fecha Inicio Real",
+                    "Fecha Fin Real",
+                    "Semanas Reales",
+                    "Notas"
+                ];
+
+                const rows = tasks.map(t => {
+                    const plannedRange = getTaskDateRangeLocal(t.schedule);
+                    const realRange = getTaskDateRangeLocal(t.realSchedule);
+                    const progress = getStatusProgressLocal(t.status);
+                    const plannedWeeks = t.schedule ? t.schedule.length : 0;
+                    const realWeeks = t.realSchedule ? t.realSchedule.length : 0;
+                    
+                    const cleanStr = (str) => {
+                        if (!str) return "";
+                        return '"' + str.replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
+                    };
+                    
+                    return [
+                        t.id,
+                        cleanStr(t.proyecto),
+                        cleanStr(t.responsable),
+                        cleanStr(t.tarea),
+                        cleanStr(t.compania),
+                        cleanStr(t.status),
+                        progress,
+                        plannedRange.startStr,
+                        plannedRange.endStr,
+                        plannedWeeks,
+                        realRange.startStr,
+                        realRange.endStr,
+                        realWeeks,
+                        cleanStr(t.notes)
+                    ].join(",");
+                });
+
+                const csvContent = "\ufeff" + [headers.join(","), ...rows].join("\n");
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", `hoshin_tasks_powerbi_${new Date().toISOString().slice(0,10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (err) {
+                console.error("Error al exportar CSV:", err);
+                alert("Error al exportar a CSV: " + err.message);
             }
         });
     }
@@ -3287,6 +3564,13 @@ function saveProjectsMetadata() {
         writeSpFile("hoshin_metadata.json", JSON.stringify(projectsMetadata, null, 2))
             .catch(e => console.error("Error guardando metadata de proyectos en SharePoint:", e));
     }
+    if (useLocalServer) {
+        fetch("/api/metadata", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(projectsMetadata)
+        }).catch(e => console.error("Error guardando metadatos de proyectos en servidor local:", e));
+    }
     if (useFirebase && db) {
         return db.collection("config").doc("projectsMetadata").set(projectsMetadata)
             .catch(e => {
@@ -3532,6 +3816,19 @@ function renderUsers() {
         </td>
     `;
     tbody.appendChild(trAdmin);
+    
+    // Fila fija para el Administrador permanente "artez"
+    const trAdminArtez = document.createElement("tr");
+    trAdminArtez.innerHTML = `
+        <td><strong>artez</strong></td>
+        <td><span class="status-pill status-completed">${t('admin_permanent_label')}</span></td>
+        <td style="text-align: center;">
+            <button class="btn-delete-user" disabled title="${t('admin_cannot_delete')}">
+                <i data-lucide="trash-2" style="width: 1rem; height: 1rem;"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(trAdminArtez);
     
     // Filas para los colaboradores de la lista
     collaboratorsList.forEach(user => {

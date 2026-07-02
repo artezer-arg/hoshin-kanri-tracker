@@ -101,6 +101,9 @@
                     <button class="btn btn-primary" id="btn-export" title="Exportar a Excel">
                         <i data-lucide="download"></i> <span data-i18n="btn_export">Exportar Excel</span>
                     </button>
+                    <button class="btn btn-primary" id="btn-export-csv" title="Exportar CSV para Power BI" style="background-color: #f2c811; color: #000; border-color: #f2c811;">
+                        <i data-lucide="bar-chart-3"></i> <span>Exportar Power BI</span>
+                    </button>
                     <button class="btn btn-primary" id="btn-print">
                         <i data-lucide="printer"></i> <span data-i18n="btn_print">Imprimir Reporte</span>
                     </button>
@@ -273,7 +276,7 @@
                     <div class="chart-card">
                         <h2>Personal con Acceso Autorizado</h2>
                         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-                            El usuario <strong>nramirez</strong> siempre tiene permisos de <strong>Editor</strong> (Administrador). Los usuarios listados aquí tendrán permisos de <strong>Colaborador</strong>. Cualquier otro usuario de Windows no registrado tendrá permisos de <strong>Visor</strong> (Solo lectura).
+                            Los usuarios <strong>nramirez</strong> y <strong>artez</strong> siempre tienen permisos de <strong>Editor</strong> (Administrador). Los usuarios listados aquí tendrán permisos de <strong>Colaborador</strong>. Cualquier otro usuario de Windows no registrado tendrá permisos de <strong>Visor</strong> (Solo lectura).
                         </p>
                         <div style="overflow-x: auto;">
                             <table class="gantt-table">

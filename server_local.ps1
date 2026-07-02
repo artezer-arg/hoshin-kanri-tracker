@@ -49,6 +49,87 @@ while ($listener.IsListening) {
             $response.Close()
             continue
         }
+        if ($rawUrl -eq "/api/tasks") {
+            $tasksFile = Join-Path $currentDir "tasks.json"
+            if ($request.HttpMethod -eq "POST") {
+                $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
+                $body = $reader.ReadToEnd()
+                $reader.Close()
+                [System.IO.File]::WriteAllText($tasksFile, $body, [System.Text.Encoding]::UTF8)
+                $response.ContentType = "application/json"
+                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"status":"success"}')
+                $response.ContentLength64 = $resBytes.Length
+                $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
+            } else {
+                if (Test-Path $tasksFile -PathType Leaf) {
+                    $bytes = [System.IO.File]::ReadAllBytes($tasksFile)
+                    $response.ContentType = "application/json; charset=utf-8"
+                    $response.ContentLength64 = $bytes.Length
+                    $response.OutputStream.Write($bytes, 0, $bytes.Length)
+                } else {
+                    $response.StatusCode = 404
+                    $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"error":"Not Found"}')
+                    $response.ContentLength64 = $resBytes.Length
+                    $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
+                }
+            }
+            $response.Close()
+            continue
+        }
+        if ($rawUrl -eq "/api/metadata") {
+            $metadataFile = Join-Path $currentDir "metadata.json"
+            if ($request.HttpMethod -eq "POST") {
+                $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
+                $body = $reader.ReadToEnd()
+                $reader.Close()
+                [System.IO.File]::WriteAllText($metadataFile, $body, [System.Text.Encoding]::UTF8)
+                $response.ContentType = "application/json"
+                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"status":"success"}')
+                $response.ContentLength64 = $resBytes.Length
+                $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
+            } else {
+                if (Test-Path $metadataFile -PathType Leaf) {
+                    $bytes = [System.IO.File]::ReadAllBytes($metadataFile)
+                    $response.ContentType = "application/json; charset=utf-8"
+                    $response.ContentLength64 = $bytes.Length
+                    $response.OutputStream.Write($bytes, 0, $bytes.Length)
+                } else {
+                    $response.StatusCode = 404
+                    $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"error":"Not Found"}')
+                    $response.ContentLength64 = $resBytes.Length
+                    $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
+                }
+            }
+            $response.Close()
+            continue
+        }
+        if ($rawUrl -eq "/api/collaborators") {
+            $collabFile = Join-Path $currentDir "collaborators.json"
+            if ($request.HttpMethod -eq "POST") {
+                $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
+                $body = $reader.ReadToEnd()
+                $reader.Close()
+                [System.IO.File]::WriteAllText($collabFile, $body, [System.Text.Encoding]::UTF8)
+                $response.ContentType = "application/json"
+                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"status":"success"}')
+                $response.ContentLength64 = $resBytes.Length
+                $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
+            } else {
+                if (Test-Path $collabFile -PathType Leaf) {
+                    $bytes = [System.IO.File]::ReadAllBytes($collabFile)
+                    $response.ContentType = "application/json; charset=utf-8"
+                    $response.ContentLength64 = $bytes.Length
+                    $response.OutputStream.Write($bytes, 0, $bytes.Length)
+                } else {
+                    $response.StatusCode = 404
+                    $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"error":"Not Found"}')
+                    $response.ContentLength64 = $resBytes.Length
+                    $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
+                }
+            }
+            $response.Close()
+            continue
+        }
         if ($rawUrl -eq "/api/heartbeat") {
             $username = $request.QueryString["username"]
             if ($username) {

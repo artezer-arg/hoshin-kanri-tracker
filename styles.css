@@ -1209,15 +1209,19 @@ body.fullscreen-active .gantt-table {
     .sticky-col-1,
     .sticky-col-2,
     .sticky-col-3,
-    .sticky-col-4 {
+    .sticky-col-4,
+    .sticky-col-5,
+    .sticky-col-6 {
         position: static !important;
         background-color: white !important;
         width: auto !important;
         min-width: auto !important;
+        white-space: normal !important;
+        word-break: break-word !important;
     }
 
-    .sticky-col-3 {
-        white-space: normal !important;
+    .sticky-col-6::after {
+        display: none !important;
     }
 
     .gantt-month-header {
@@ -1226,15 +1230,15 @@ body.fullscreen-active .gantt-table {
 
     /* Map Gantt Cell colors for high-contrast B&W or Color printers */
     .gantt-week-header {
-        font-size: 5pt !important;
-        width: 18px !important;
-        min-width: 18px !important;
+        font-size: 7.5pt !important;
+        width: 26px !important;
+        min-width: 26px !important;
         white-space: nowrap !important;
     }
     .gantt-week-cell {
         background-color: transparent !important;
-        width: 18px !important;
-        min-width: 18px !important;
+        width: 26px !important;
+        min-width: 26px !important;
     }
 
     .gantt-week-cell.active {
@@ -1267,7 +1271,7 @@ body.fullscreen-active .gantt-table {
     .col-responsable { width: auto !important; }
     .col-tarea { width: auto !important; }
     .col-compania { width: auto !important; }
-    .col-week { width: 18px !important; }
+    .col-week { width: 26px !important; }
     .col-accion { display: none !important; }
 }
 
